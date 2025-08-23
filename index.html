@@ -1,0 +1,419 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Aktywni — wydarzenia sportowe</title>
+  <meta name="description" content="Strona dla aktywnych sportowo: odkrywaj i twórz wydarzenia, zapisuj się, sprawdzaj lokalizacje na mini-mapie." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <!-- Leaflet (mini‑mapa) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <style>
+    :root{
+      --bg: #0b1020;          /* tło */
+      --panel: #111731;       /* karty */
+      --muted: #9aa4c7;       /* tekst poboczny */
+      --text: #e8ecfb;        /* tekst główny */
+      --brand: #7c9cff;       /* akcja */
+      --brand-2:#66e1c6;      /* akcent */
+      --danger:#ff6b6b;       /* błąd */
+      --ok:#5dd39e;           /* ok */
+      --radius: 16px;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; font-family:Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif; color:var(--text);
+      background: radial-gradient(1200px 600px at 20% -10%, #15204a 0%, rgba(21,32,74,0) 60%),
+                  radial-gradient(900px 500px at 100% 0%, #0c3b5a 0%, rgba(12,59,90,0) 50%), var(--bg);
+    }
+    a{color:inherit; text-decoration:none}
+    .container{max-width:1100px; margin:0 auto; padding:24px}
+
+    /* Navbar */
+    .nav{
+      position:sticky; top:0; z-index:20; backdrop-filter: blur(10px);
+      background: linear-gradient(180deg, rgba(11,16,32,.85) 0%, rgba(11,16,32,.55) 100%);
+      border-bottom:1px solid rgba(255,255,255,.06);
+    }
+    .nav-inner{display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 24px}
+    .brand{display:flex; align-items:center; gap:10px; font-weight:800; letter-spacing:.3px}
+    .logo{width:32px; height:32px; border-radius:10px; background: linear-gradient(135deg, var(--brand), var(--brand-2)); box-shadow: var(--shadow)}
+    .nav a{opacity:.9}
+    .nav a.active{color:var(--brand-2)}
+    .btn{
+      display:inline-flex; align-items:center; gap:8px; padding:10px 14px; border-radius:12px; border:1px solid rgba(255,255,255,.1);
+      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02)); color:var(--text);
+      transition:.2s transform ease, .2s box-shadow ease, .2s background ease; cursor:pointer;
+    }
+    .btn:hover{transform:translateY(-1px); box-shadow: var(--shadow)}
+    .btn.primary{background: linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%); border:none; color:#0a0f1f; font-weight:700}
+    .btn.link{border-color: transparent; background: transparent; color: var(--brand-2); font-weight:600}
+
+    /* Hero */
+    .hero{padding:64px 24px 24px}
+    .hero-grid{display:grid; grid-template-columns:1.2fr 1fr; gap:28px; align-items:center}
+    .glass{background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.02)); border:1px solid rgba(255,255,255,.12); border-radius:var(--radius); box-shadow:var(--shadow)}
+    .hero h1{font-size: clamp(28px, 3vw, 44px); margin:0 0 10px; line-height:1.1}
+    .hero p{color:var(--muted); margin:0 0 20px}
+    .hero-cta{display:flex; gap:10px; flex-wrap:wrap}
+    .art{
+      min-height:300px; border-radius:var(--radius); overflow:hidden; position:relative;
+      background: radial-gradient(600px 300px at 20% 20%, rgba(124,156,255,.25), transparent 60%),
+                  radial-gradient(500px 250px at 80% 10%, rgba(102,225,198,.25), transparent 60%),
+                  url('https://images.unsplash.com/photo-1521417531039-78c905ad3a49?q=80&w=1400&auto=format&fit=crop') center/cover no-repeat; /* nowoczesny obrazek */
+      outline: 1px solid rgba(255,255,255,.1);
+    }
+    .art .badge{position:absolute; right:16px; bottom:16px; background:rgba(10,15,31,.6); padding:10px 12px; border-radius:12px; border:1px solid rgba(255,255,255,.12); font-weight:600}
+
+    /* Sekcje */
+    .section{padding:36px 24px}
+    .cards{display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:16px}
+    .card{padding:16px; border-radius:16px; background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.03)); border:1px solid rgba(255,255,255,.1)}
+
+    /* Lista wydarzeń */
+    .event{display:grid; grid-template-columns:88px 1fr auto; gap:14px; align-items:center; padding:12px; border-radius:14px; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.08)}
+    .event .banner{width:88px; height:64px; border-radius:12px; background:#223; overflow:hidden}
+    .event .banner img{width:100%; height:100%; object-fit:cover}
+    .event .meta{font-size:14px; color:var(--muted)}
+    .event .title{font-weight:700}
+    .pill{font-size:12px; padding:6px 10px; border-radius:999px; border:1px solid rgba(255,255,255,.12);}
+    .pill.ok{background:rgba(93,211,158,.15); border-color:rgba(93,211,158,.35)}
+    .pill.low{background:rgba(255,193,7,.15); border-color:rgba(255,193,7,.35)}
+    .pill.none{background:rgba(255,107,107,.15); border-color:rgba(255,107,107,.35)}
+
+    /* Modal */
+    .modal{position:fixed; inset:0; display:none; place-items:center; background:rgba(2,4,12,.55); backdrop-filter: blur(4px)}
+    .modal.open{display:grid}
+    .modal-card{width:min(920px, 92vw); max-height:92vh; overflow:auto; padding:18px; border-radius:18px; background:var(--panel); border:1px solid rgba(255,255,255,.12); box-shadow:var(--shadow)}
+    .modal-grid{display:grid; grid-template-columns:1.1fr .9fr; gap:16px}
+    #map{height:300px; border-radius:14px; border:1px solid rgba(255,255,255,.12)}
+    .field{display:grid; gap:6px; margin-bottom:12px}
+    input, textarea, select{background:#0d1328; border:1px solid rgba(255,255,255,.12); border-radius:12px; padding:10px 12px; color:var(--text)}
+    label{font-size:13px; color:var(--muted)}
+    .danger{color:var(--danger)}
+    .success{color:var(--ok)}
+
+    /* Footer */
+    footer{color:var(--muted); font-size:13px; padding:24px}
+
+    @media (max-width: 860px){
+      .hero-grid{grid-template-columns:1fr;}
+      .modal-grid{grid-template-columns:1fr}
+      .event{grid-template-columns:72px 1fr;}
+    }
+  </style>
+</head>
+<body>
+  <!-- Nawigacja -->
+  <header class="nav">
+    <div class="nav-inner container">
+      <a href="#/" class="brand"><span class="logo"></span> Aktywni</a>
+      <nav style="display:flex; gap:8px; align-items:center">
+        <a href="#/wydarzenia" id="nav-events" class="btn">Wydarzenia</a>
+        <a href="#/nowe" id="nav-create" class="btn link" title="Dodaj nowe wydarzenie">Stwórz wydarzenie</a>
+        <a href="https://github.com" target="_blank" class="btn" rel="noreferrer">Kod źródłowy</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Główna zawartość (SPA) -->
+  <main id="app"></main>
+
+  <!-- Szablony widoków -->
+  <template id="home-tpl">
+    <section class="hero container">
+      <div class="hero-grid">
+        <div class="glass" style="padding:22px">
+          <h1>Twoje sportowe centrum wydarzeń</h1>
+          <p>Odkrywaj lokalne aktywności, zapisuj się na wydarzenia i twórz własne — od biegania po siatkówkę.
+             Mini‑mapa pomoże Ci szybko sprawdzić lokalizację.</p>
+          <div class="hero-cta">
+            <a class="btn primary" href="#/wydarzenia">Przeglądaj wydarzenia</a>
+            <a class="btn link" href="#/nowe" style="color:var(--brand-2)">Stwórz wydarzenie</a>
+          </div>
+        </div>
+        <div class="art glass">
+          <span class="badge">Aktywni razem ✦</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="section container">
+      <h2 style="margin:0 0 12px">Jak to działa?</h2>
+      <div class="cards">
+        <div class="card">
+          <strong>Krok 1</strong>
+          <p class="meta">Wybierz wydarzenie z listy i otwórz szczegóły.</p>
+        </div>
+        <div class="card">
+          <strong>Krok 2</strong>
+          <p class="meta">Sprawdź datę, miejsce i podgląd na mini‑mapie.</p>
+        </div>
+        <div class="card">
+          <strong>Krok 3</strong>
+          <p class="meta">Zapisz się. Liczba miejsc aktualizuje się automatycznie*</p>
+          <p class="meta">*W demo zapisy są lokalne (na tym urządzeniu).</p>
+        </div>
+      </div>
+    </section>
+  </template>
+
+  <template id="events-tpl">
+    <section class="section container">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px">
+        <h2 style="margin:0">Wydarzenia</h2>
+        <a class="btn link" href="#/nowe" style="color:var(--brand-2)">Stwórz wydarzenie</a>
+      </div>
+      <div id="events-list" class="stack" style="display:grid; gap:12px"></div>
+    </section>
+  </template>
+
+  <template id="create-tpl">
+    <section class="section container">
+      <h2 style="margin:0 0 10px">Dodaj nowe wydarzenie</h2>
+      <form id="create-form" class="glass" style="padding:16px">
+        <div class="field">
+          <label>Nazwa wydarzenia</label>
+          <input name="title" required placeholder="Bieg nad Wisłą" />
+        </div>
+        <div class="field">
+          <label>Data i godzina</label>
+          <input type="datetime-local" name="datetime" required />
+        </div>
+        <div class="field">
+          <label>Miejsce (adres lub opis)</label>
+          <input name="place" required placeholder="Bulwary Wiślane, Warszawa" />
+        </div>
+        <div class="field" style="display:grid; grid-template-columns:1fr 1fr; gap:12px">
+          <div>
+            <label>Szerokość geo. (lat)</label>
+            <input name="lat" type="number" step="any" placeholder="52.231" required />
+          </div>
+          <div>
+            <label>Długość geo. (lng)</label>
+            <input name="lng" type="number" step="any" placeholder="21.007" required />
+          </div>
+        </div>
+        <div class="field">
+          <label>Limit miejsc</label>
+          <input name="capacity" type="number" min="1" value="20" required />
+        </div>
+        <div class="field">
+          <label>Baner (URL obrazka — opcjonalnie)</label>
+          <input name="banner" type="url" placeholder="https://...jpg" />
+        </div>
+        <div class="field">
+          <label>Opis</label>
+          <textarea name="desc" rows="3" placeholder="Przyjemne tempo, każdy mile widziany."></textarea>
+        </div>
+        <div style="display:flex; gap:8px; align-items:center; justify-content:space-between">
+          <button class="btn primary" type="submit">Zapisz wydarzenie</button>
+          <a class="btn" href="#/wydarzenia">Anuluj</a>
+        </div>
+      </form>
+    </section>
+  </template>
+
+  <!-- Modal szczegółów wydarzenia -->
+  <div class="modal" id="event-modal" aria-hidden="true" role="dialog" aria-label="Szczegóły wydarzenia">
+    <div class="modal-card">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:8px">
+        <h3 id="m-title" style="margin:0">Wydarzenie</h3>
+        <button class="btn" id="m-close">Zamknij</button>
+      </div>
+      <div class="modal-grid">
+        <div>
+          <div id="m-banner" class="banner" style="height:160px; border-radius:14px; overflow:hidden; margin-bottom:10px; background:#223"></div>
+          <p class="meta" id="m-desc"></p>
+          <div id="map"></div>
+        </div>
+        <div>
+          <div class="card" style="margin-bottom:12px">
+            <div style="display:flex; gap:12px; align-items:center; justify-content:space-between">
+              <div>
+                <div class="title" id="m-title-sm"></div>
+                <div class="meta" id="m-when"></div>
+                <div class="meta" id="m-place"></div>
+              </div>
+              <span id="m-cap-pill" class="pill">--</span>
+            </div>
+          </div>
+          <form id="join-form" class="glass" style="padding:12px">
+            <div class="field">
+              <label>Twoje imię</label>
+              <input name="name" required placeholder="Ania" />
+            </div>
+            <div class="field">
+              <label>Twój e‑mail (opcjonalnie)</label>
+              <input name="email" type="email" placeholder="ania@example.com" />
+            </div>
+            <button class="btn primary" type="submit">Zapisz się</button>
+            <div id="join-msg" style="margin-top:8px"></div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="container">
+    <small>© <span id="year"></span> Aktywni. Demo bez backendu — zapisy i wydarzenia zapisywane lokalnie w przeglądarce.</small>
+  </footer>
+
+  <script>
+  // ===== Prosty router SPA =====
+  const routes = {
+    '/': () => renderTemplate('home-tpl'),
+    '/wydarzenia': renderEventsView,
+    '/nowe': () => renderTemplate('create-tpl', initCreateForm)
+  };
+  function renderTemplate(id, after){
+    const tpl = document.getElementById(id);
+    document.getElementById('app').innerHTML = tpl.innerHTML;
+    after && after();
+  }
+  function setActiveNav(){
+    const hash = location.hash.replace('#','');
+    document.querySelectorAll('header .btn').forEach(a=>a.classList.remove('active'));
+    if(hash.startsWith('/wydarzenia')) document.getElementById('nav-events').classList.add('active');
+    if(hash.startsWith('/nowe')) document.getElementById('nav-create').classList.add('active');
+  }
+  window.addEventListener('hashchange', ()=>{ setActiveNav(); route(); });
+  function route(){
+    const path = location.hash.replace('#','') || '/';
+    (routes[path] || routes['/'])();
+  }
+
+  // ===== Dane & storage =====
+  const STORE_KEY = 'aktywni:events:v1';
+  const SIGN_KEY = 'aktywni:signups:v1';
+  const sample = [
+    { id: crypto.randomUUID(), title: 'Bieg nad Wisłą', datetime: addDaysISO(3, '18:00'), place:'Bulwary Wiślane, Warszawa', lat:52.237, lng:21.022, capacity: 20, taken: 5, banner:'https://images.unsplash.com/photo-1546483875-ad9014c88eba?q=80&w=1200&auto=format&fit=crop', desc:'Lekki bieg ~6km, tempo konwersacyjne. Każdy mile widziany.' },
+    { id: crypto.randomUUID(), title: 'Siatkówka plażowa', datetime: addDaysISO(5, '17:30'), place:'Plaża Poniatówka', lat:52.234, lng:21.040, capacity: 12, taken: 9, banner:'https://images.unsplash.com/photo-1517649763962-0c623066013b?q=80&w=1200&auto=format&fit=crop', desc:'Gramy 3×3, poziom rekreacyjny. Zabierz wodę i uśmiech :)' },
+    { id: crypto.randomUUID(), title: 'Joga w parku', datetime: addDaysISO(2, '08:30'), place:'Park Skaryszewski', lat:52.244, lng:21.056, capacity: 25, taken: 12, banner:'https://images.unsplash.com/photo-1552196563-55cd4e45efb3?q=80&w=1200&auto=format&fit=crop', desc:'Poranna sesja vinyasa, mata mile widziana.' }
+  ];
+  function addDaysISO(d, time='10:00'){
+    const dt = new Date(Date.now() + d*24*3600*1000);
+    const yyyy = dt.getFullYear();
+    const mm = String(dt.getMonth()+1).padStart(2,'0');
+    const dd = String(dt.getDate()).padStart(2,'0');
+    return `${yyyy}-${mm}-${dd}T${time}`;
+  }
+  function loadEvents(){
+    const raw = localStorage.getItem(STORE_KEY);
+    if(raw){ try { return JSON.parse(raw); } catch(e){ console.warn(e); } }
+    localStorage.setItem(STORE_KEY, JSON.stringify(sample));
+    return sample;
+  }
+  function saveEvents(list){ localStorage.setItem(STORE_KEY, JSON.stringify(list)); }
+  function loadSignups(){ return JSON.parse(localStorage.getItem(SIGN_KEY) || '{}'); }
+  function saveSignups(v){ localStorage.setItem(SIGN_KEY, JSON.stringify(v)); }
+
+  // ===== Widok listy wydarzeń =====
+  function renderEventsView(){
+    renderTemplate('events-tpl');
+    const listEl = document.getElementById('events-list');
+    const events = loadEvents().sort((a,b)=> new Date(a.datetime) - new Date(b.datetime));
+    listEl.innerHTML = '';
+    events.forEach(ev=> listEl.appendChild(eventCard(ev)) );
+  }
+  function eventCard(ev){
+    const li = document.createElement('div');
+    li.className = 'event';
+    li.innerHTML = `
+      <div class="banner">${ev.banner ? `<img src="${ev.banner}" alt="${ev.title}">` : ''}</div>
+      <div>
+        <div class="title">${ev.title}</div>
+        <div class="meta">${fmtDate(ev.datetime)} · ${ev.place}</div>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center">
+        ${capacityPillHTML(ev)}
+        <button class="btn" aria-label="Otwórz szczegóły">Szczegóły</button>
+      </div>`;
+    li.querySelector('button').addEventListener('click', ()=> openEventModal(ev.id));
+    return li;
+  }
+  function capacityPillHTML(ev){
+    const left = Math.max(0, ev.capacity - (ev.taken||0));
+    const cls = left===0? 'none' : left<5? 'low' : 'ok';
+    return `<span class="pill ${cls}">${left} wolnych</span>`;
+  }
+
+  // ===== Tworzenie wydarzenia =====
+  function initCreateForm(){
+    const form = document.getElementById('create-form');
+    form.addEventListener('submit', (e)=>{
+      e.preventDefault();
+      const fd = new FormData(form);
+      const ev = Object.fromEntries(fd.entries());
+      ev.id = crypto.randomUUID();
+      ev.capacity = Number(ev.capacity)||1; ev.taken = 0;
+      ev.lat = parseFloat(ev.lat); ev.lng = parseFloat(ev.lng);
+      saveEvents([ ...loadEvents(), ev ]);
+      location.hash = '#/wydarzenia';
+    });
+  }
+
+  // ===== Modal wydarzenia + mini‑mapa =====
+  let map, marker; let currentEventId = null;
+  function openEventModal(id){
+    const ev = loadEvents().find(x=>x.id===id); if(!ev) return;
+    currentEventId = id;
+    document.getElementById('m-title').textContent = ev.title;
+    document.getElementById('m-title-sm').textContent = ev.title;
+    document.getElementById('m-when').textContent = fmtDate(ev.datetime);
+    document.getElementById('m-place').textContent = ev.place;
+    document.getElementById('m-desc').textContent = ev.desc||'';
+    document.getElementById('m-cap-pill').outerHTML = capacityPillHTML(ev).replace('pill','pill').replace('wolnych','wolnych');
+    const banner = document.getElementById('m-banner');
+    banner.innerHTML = ev.banner? `<img src="${ev.banner}" alt="${ev.title}" style="width:100%; height:100%; object-fit:cover">` : '';
+
+    const modal = document.getElementById('event-modal');
+    modal.classList.add('open');
+    if(!map){
+      map = L.map('map');
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(map);
+    }
+    map.setView([ev.lat, ev.lng], 14);
+    if(marker){ marker.remove(); }
+    marker = L.marker([ev.lat, ev.lng]).addTo(map).bindPopup(ev.title);
+
+    const form = document.getElementById('join-form');
+    form.onsubmit = (e)=>{
+      e.preventDefault();
+      const { name, email } = Object.fromEntries(new FormData(form).entries());
+      const events = loadEvents();
+      const idx = events.findIndex(x=>x.id===id);
+      const left = events[idx].capacity - (events[idx].taken||0);
+      const msg = document.getElementById('join-msg');
+      if(left<=0){ msg.innerHTML = '<span class="danger">Brak miejsc</span>'; return; }
+      events[idx].taken = (events[idx].taken||0) + 1; saveEvents(events);
+      const signups = loadSignups();
+      signups[id] = signups[id] || []; signups[id].push({name, email, at: new Date().toISOString()});
+      saveSignups(signups);
+      msg.innerHTML = '<span class="success">Jesteś zapisany/a! Do zobaczenia 🔥</span>';
+      renderEventsView();
+    };
+  }
+  document.getElementById('m-close').addEventListener('click', ()=> document.getElementById('event-modal').classList.remove('open'));
+  document.getElementById('event-modal').addEventListener('click', (e)=>{ if(e.target.id==='event-modal') e.currentTarget.classList.remove('open'); });
+
+  // ===== Utils =====
+  function fmtDate(iso){
+    try{
+      const d = new Date(iso);
+      return d.toLocaleString('pl-PL', { weekday:'short', year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+    }catch{ return iso }
+  }
+
+  // Start
+  document.getElementById('year').textContent = new Date().getFullYear();
+  setActiveNav();
+  route();
+  </script>
+</body>
+</html>
