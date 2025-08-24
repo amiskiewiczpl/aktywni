@@ -291,10 +291,16 @@
   // ===== Dane & storage =====
   const STORE_KEY = 'aktywni:events:v1';
   const SIGN_KEY = 'aktywni:signups:v1';
+  // Bezpieczny generator ID (fallback dla starszych przeglądarek/GitHub Pages)
+  function uid(){
+    try{ if(window.crypto && window.crypto.randomUUID) return window.crypto.randomUUID(); }catch{}
+    return 'id-'+Math.random().toString(36).slice(2)+Date.now();
+  }
+
   const sample = [
-    { id: crypto.randomUUID(), title: 'Bieg nad Wisłą', datetime: addDaysISO(3, '18:00'), place:'Bulwary Wiślane, Warszawa', lat:52.237, lng:21.022, capacity: 20, taken: 5, banner:'https://images.unsplash.com/photo-1546483875-ad9014c88eba?q=80&w=1200&auto=format&fit=crop', desc:'Lekki bieg ~6km, tempo konwersacyjne. Każdy mile widziany.' },
-    { id: crypto.randomUUID(), title: 'Siatkówka plażowa', datetime: addDaysISO(5, '17:30'), place:'Plaża Poniatówka', lat:52.234, lng:21.040, capacity: 12, taken: 9, banner:'https://images.unsplash.com/photo-1517649763962-0c623066013b?q=80&w=1200&auto=format&fit=crop', desc:'Gramy 3×3, poziom rekreacyjny. Zabierz wodę i uśmiech :)' },
-    { id: crypto.randomUUID(), title: 'Joga w parku', datetime: addDaysISO(2, '08:30'), place:'Park Skaryszewski', lat:52.244, lng:21.056, capacity: 25, taken: 12, banner:'https://images.unsplash.com/photo-1552196563-55cd4e45efb3?q=80&w=1200&auto=format&fit=crop', desc:'Poranna sesja vinyasa, mata mile widziana.' }
+    { id: uid(), title: 'Bieg nad Wisłą', datetime: addDaysISO(3, '18:00'), place:'Bulwary Wiślane, Warszawa', lat:52.237, lng:21.022, capacity: 20, taken: 5, banner:'https://images.unsplash.com/photo-1546483875-ad9014c88eba?q=80&w=1200&auto=format&fit=crop', desc:'Lekki bieg ~6km, tempo konwersacyjne. Każdy mile widziany.' },
+    { id: uid(), title: 'Siatkówka plażowa', datetime: addDaysISO(5, '17:30'), place:'Plaża Poniatówka', lat:52.234, lng:21.040, capacity: 12, taken: 9, banner:'https://images.unsplash.com/photo-1517649763962-0c623066013b?q=80&w=1200&auto=format&fit=crop', desc:'Gramy 3×3, poziom rekreacyjny. Zabierz wodę i uśmiech :)' },
+    { id: uid(), title: 'Joga w parku', datetime: addDaysISO(2, '08:30'), place:'Park Skaryszewski', lat:52.244, lng:21.056, capacity: 25, taken: 12, banner:'https://images.unsplash.com/photo-1552196563-55cd4e45efb3?q=80&w=1200&auto=format&fit=crop', desc:'Poranna sesja vinyasa, mata mile widziana.' }
   ];
   function addDaysISO(d, time='10:00'){
     const dt = new Date(Date.now() + d*24*3600*1000);
@@ -350,7 +356,7 @@
       e.preventDefault();
       const fd = new FormData(form);
       const ev = Object.fromEntries(fd.entries());
-      ev.id = crypto.randomUUID();
+      ev.id = uid();
       ev.capacity = Number(ev.capacity)||1; ev.taken = 0;
       ev.lat = parseFloat(ev.lat); ev.lng = parseFloat(ev.lng);
       saveEvents([ ...loadEvents(), ev ]);
