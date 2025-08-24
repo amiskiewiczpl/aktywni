@@ -19,9 +19,11 @@
     <div class="nav-inner container">
       <a href="#/" class="brand"><span class="logo"></span> Aktywni</a>
       <nav style="display:flex; gap:8px; align-items:center">
-        <a href="#/wydarzenia" id="nav-events" class="btn">Wydarzenia</a>
-        <a href="#/nowe" id="nav-create" class="btn link" title="Dodaj nowe wydarzenie">Stwórz wydarzenie</a>
-      </nav>
+  <a href="#/wydarzenia" id="nav-events" class="btn">Wydarzenia</a>
+  <a href="#/nowe" id="nav-create" class="btn link" title="Dodaj nowe wydarzenie">Stwórz wydarzenie</a>
+  <a href="#/login" id="nav-login" class="btn">Login</a>
+  <a href="#/profil" id="nav-profile" class="btn" style="display:none">Profil</a>
+</nav>
     </div>
   </header>
 
@@ -76,6 +78,38 @@
       <div id="events-list" class="stack" style="display:grid; gap:12px"></div>
     </section>
   </template>
+<template id="login-tpl">
+  <section class="section container">
+    <h2 style="margin:0 0 10px">Logowanie</h2>
+    <form id="login-form" class="glass" style="padding:16px; max-width:520px">
+      <div class="field">
+        <label>E‑mail</label>
+        <input name="email" type="email" required placeholder="jan@example.com" />
+      </div>
+      <div class="field">
+        <label>Imię (na potrzeby demo)</label>
+        <input name="name" required placeholder="Jan" />
+      </div>
+      <button class="btn primary" type="submit">Zaloguj (demo)</button>
+      <p class="meta" style="margin-top:8px">
+        To tylko demo — dane trafią do <code>localStorage</code>.
+      </p>
+    </form>
+  </section>
+</template>
+
+<template id="profile-tpl">
+  <section class="section container">
+    <h2 style="margin:0 0 10px">Twój profil</h2>
+    <div class="glass" style="padding:16px; max-width:640px">
+      <div id="profile-box"></div>
+      <div style="display:flex; gap:8px; margin-top:10px">
+        <button id="btn-logout" class="btn">Wyloguj</button>
+        <a href="#/wydarzenia" class="btn link">Wróć do wydarzeń</a>
+      </div>
+    </div>
+  </section>
+</template>
 
   <template id="create-tpl">
     <section class="section container">

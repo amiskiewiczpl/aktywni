@@ -1,31 +1,71 @@
-// ===== Prosty router SPA =====
+// ===== ROUTER (hash) =====
 const routes = {
   '/': () => renderTemplate('home-tpl'),
   '/wydarzenia': renderEventsView,
-  '/nowe': () => renderTemplate('create-tpl', initCreateForm)
+  '/nowe': () => guardOrganizer(() => renderTemplate('create-tpl', initCreateForm)),
+  '/login': renderLoginView,
+  '/profil': renderProfileView,
 };
-function renderTemplate(id, after){
+
+function renderTemplate(id, after) {
   const tpl = document.getElementById(id);
   document.getElementById('app').innerHTML = tpl.innerHTML;
   after && after();
 }
-function setActiveNav(){
+
+function setActiveNav() {
   const hash = location.hash.replace('#','');
   document.querySelectorAll('header .btn').forEach(a=>a.classList.remove('active'));
   if(hash.startsWith('/wydarzenia')) document.getElementById('nav-events').classList.add('active');
   if(hash.startsWith('/nowe')) document.getElementById('nav-create').classList.add('active');
+  if(hash.startsWith('/login')) document.getElementById('nav-login').classList.add('active');
+  if(hash.startsWith('/profil')) document.getElementById('nav-profile').classList.add('active');
 }
+
 window.addEventListener('hashchange', ()=>{ setActiveNav(); route(); });
 function route(){
   const path = location.hash.replace('#','') || '/';
   (routes[path] || routes['/'])();
+  updateAuthNav();
 }
 
-// ===== Dane & storage =====
+// ===== PSEUDO‑AUTH (demo na localStorage) =====
+const AUTH_KEY = 'aktywni:auth:user';
+function getUser(){ try { return JSON.parse(localStorage.getItem(AUTH_KEY)); } catch { return null } }
+function setUser(u){ localStorage.setItem(AUTH_KEY, JSON.stringify(u)); updateAuthNav(); }
+function signOut(){ localStorage.removeItem(AUTH_KEY); updateAuthNav(); }
+
+function updateAuthNav(){
+  const u = getUser();
+  const login = document.getElementById('nav-login');
+  const prof  = document.getElementById('nav-profile');
+  const create= document.getElementById('nav-create');
+  if(!login || !prof) return;
+
+  if(u){
+    login.style.display = 'none';
+    prof.style.display  = '';
+    prof.textContent    = u.name ? `Profil (${u.name})` : 'Profil';
+    create.classList.remove('link'); // organizer "demo" ma dostęp
+  }else{
+    login.style.display = '';
+    prof.style.display  = 'none';
+    prof.textContent    = 'Profil';
+    create.classList.add('link');
+  }
+}
+
+// Na razie każdy zalogowany jest „organizatorem” demka
+function guardOrganizer(fn){
+  const u = getUser();
+  if(!u){ location.hash = '#/login'; return; }
+  fn();
+}
+
+// ===== DANE DEMO (localStorage) =====
 const STORE_KEY = 'aktywni:events:v1';
 const SIGN_KEY  = 'aktywni:signups:v1';
 
-// Bezpieczny generator ID
 function uid(){
   try{ if(window.crypto && window.crypto.randomUUID) return window.crypto.randomUUID(); }catch{}
   return 'id-'+Math.random().toString(36).slice(2)+Date.now();
@@ -36,6 +76,7 @@ const sample = [
   { id: uid(), title: 'Siatkówka plażowa', datetime: addDaysISO(5, '17:30'), place:'Plaża Poniatówka', lat:52.234, lng:21.040, capacity: 12, taken: 9, banner:'https://images.unsplash.com/photo-1517649763962-0c623066013b?q=80&w=1200&auto=format&fit=crop', desc:'Gramy 3×3, poziom rekreacyjny. Zabierz wodę i uśmiech :)' },
   { id: uid(), title: 'Joga w parku', datetime: addDaysISO(2, '08:30'), place:'Park Skaryszewski', lat:52.244, lng:21.056, capacity: 25, taken: 12, banner:'https://images.unsplash.com/photo-1552196563-55cd4e45efb3?q=80&w=1200&auto=format&fit=crop', desc:'Poranna sesja vinyasa, mata mile widziana.' }
 ];
+
 function addDaysISO(d, time='10:00'){
   const dt = new Date(Date.now() + d*24*3600*1000);
   const yyyy = dt.getFullYear();
@@ -53,7 +94,7 @@ function saveEvents(list){ localStorage.setItem(STORE_KEY, JSON.stringify(list))
 function loadSignups(){ return JSON.parse(localStorage.getItem(SIGN_KEY) || '{}'); }
 function saveSignups(v){ localStorage.setItem(SIGN_KEY, JSON.stringify(v)); }
 
-// ===== Widok listy wydarzeń =====
+// ===== LISTA WYDARZEŃ =====
 function renderEventsView(){
   renderTemplate('events-tpl');
   const listEl = document.getElementById('events-list');
@@ -83,7 +124,7 @@ function capacityPillHTML(ev){
   return `<span class="pill ${cls}">${left} wolnych</span>`;
 }
 
-// ===== Tworzenie wydarzenia =====
+// ===== TWORZENIE WYDARZENIA =====
 function initCreateForm(){
   const form = document.getElementById('create-form');
   form.addEventListener('submit', (e)=>{
@@ -98,11 +139,42 @@ function initCreateForm(){
   });
 }
 
-// ===== Modal wydarzenia + mini‑mapa =====
-let map, marker; let currentEventId = null;
+// ===== LOGIN =====
+function renderLoginView(){
+  renderTemplate('login-tpl', ()=>{
+    const form = document.getElementById('login-form');
+    form.addEventListener('submit', (e)=>{
+      e.preventDefault();
+      const { email, name } = Object.fromEntries(new FormData(form).entries());
+      setUser({ uid: uid(), email, name });
+      location.hash = '#/profil';
+    });
+  });
+}
+
+// ===== PROFIL =====
+function renderProfileView(){
+  const u = getUser();
+  if(!u){ location.hash = '#/login'; return; }
+  renderTemplate('profile-tpl', ()=>{
+    const box = document.getElementById('profile-box');
+    box.innerHTML = `
+      <div class="meta">Zalogowano jako:</div>
+      <div style="font-weight:700">${u.name || '(bez imienia)'}</div>
+      <div class="meta">${u.email}</div>
+    `;
+    document.getElementById('btn-logout').addEventListener('click', ()=>{
+      signOut();
+      location.hash = '#/login';
+    });
+  });
+}
+
+// ===== MODAL + MAPA =====
+let map, marker;
 function openEventModal(id){
   const ev = loadEvents().find(x=>x.id===id); if(!ev) return;
-  currentEventId = id;
+
   document.getElementById('m-title').textContent = ev.title;
   document.getElementById('m-title-sm').textContent = ev.title;
   document.getElementById('m-when').textContent = fmtDate(ev.datetime);
@@ -133,12 +205,13 @@ function openEventModal(id){
     if(left<=0){ msg.innerHTML = '<span class="danger">Brak miejsc</span>'; return; }
     events[idx].taken = (events[idx].taken||0) + 1; saveEvents(events);
     const signups = loadSignups();
-    signups[id] = signups[id] || []; signups[id].push({name, email, at: new Date().toISOString()});
+    (signups[id] = signups[id] || []).push({name, email, at: new Date().toISOString()});
     saveSignups(signups);
     msg.innerHTML = '<span class="success">Jesteś zapisany/a! Do zobaczenia 🔥</span>';
     renderEventsView();
   };
 }
+
 document.getElementById('m-close').addEventListener('click', ()=> document.getElementById('event-modal').classList.remove('open'));
 document.getElementById('event-modal').addEventListener('click', (e)=>{ if(e.target.id==='event-modal') e.currentTarget.classList.remove('open'); });
 
@@ -150,7 +223,7 @@ function fmtDate(iso){
   }catch{ return iso }
 }
 
-// Start
+// ===== Start =====
 document.getElementById('year').textContent = new Date().getFullYear();
 if(!location.hash) location.hash = '#/';
 setActiveNav();
