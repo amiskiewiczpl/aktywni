@@ -12,23 +12,41 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <link rel="stylesheet" href="/src/styles.css" />
+
+  <!-- UX/A11y (krok 3) -->
+  <style>
+    /* Widoczny focus dla klawiatury */
+    :focus-visible{ outline:3px solid #66e1c6; outline-offset:3px; border-radius:6px; }
+    /* Skip link */
+    .skip-link{ position:absolute; left:-9999px; top:auto; width:1px; height:1px; overflow:hidden; }
+    .skip-link:focus{ position:fixed; left:16px; top:16px; width:auto; height:auto; z-index:9999; background:#0b1020; color:#fff; padding:10px 14px; border-radius:8px; box-shadow:0 6px 18px rgba(0,0,0,.4); }
+    /* Kontrast focus/hover w nav */
+    header .btn:focus-visible, header .btn:hover{ box-shadow:0 0 0 3px rgba(102,225,198,.35) inset; }
+    /* Preferencje ruchu */
+    @media (prefers-reduced-motion: reduce){
+      *{ animation-duration:0.001ms !important; animation-iteration-count:1 !important; transition-duration:0.001ms !important; scroll-behavior:auto !important; }
+    }
+  </style>
 </head>
 <body>
+  <!-- Skip to content -->
+  <a class="skip-link" href="#app">Pomiń nawigację, przejdź do treści</a>
+
   <!-- Nawigacja -->
   <header class="nav">
     <div class="nav-inner container">
       <a href="#/" class="brand"><span class="logo"></span> Aktywni</a>
-      <nav style="display:flex; gap:8px; align-items:center">
-  <a href="#/wydarzenia" id="nav-events" class="btn">Wydarzenia</a>
-  <a href="#/nowe" id="nav-create" class="btn link" title="Dodaj nowe wydarzenie">Stwórz wydarzenie</a>
-  <a href="#/login" id="nav-login" class="btn">Login</a>
-  <a href="#/profil" id="nav-profile" class="btn" style="display:none">Profil</a>
-</nav>
+      <nav style="display:flex; gap:8px; align-items:center" aria-label="Główna nawigacja">
+        <a href="#/wydarzenia" id="nav-events" class="btn">Wydarzenia</a>
+        <a href="#/nowe" id="nav-create" class="btn link" title="Dodaj nowe wydarzenie">Stwórz wydarzenie</a>
+        <a href="#/login" id="nav-login" class="btn">Login</a>
+        <a href="#/profil" id="nav-profile" class="btn" style="display:none">Profil</a>
+      </nav>
     </div>
   </header>
 
   <!-- Główna zawartość (SPA) -->
-  <main id="app"></main>
+  <main id="app" role="main" tabindex="-1" aria-live="polite"></main>
 
   <!-- Szablony widoków -->
   <template id="home-tpl">
@@ -78,38 +96,39 @@
       <div id="events-list" class="stack" style="display:grid; gap:12px"></div>
     </section>
   </template>
-<template id="login-tpl">
-  <section class="section container">
-    <h2 style="margin:0 0 10px">Logowanie</h2>
-    <form id="login-form" class="glass" style="padding:16px; max-width:520px">
-      <div class="field">
-        <label>E‑mail</label>
-        <input name="email" type="email" required placeholder="jan@example.com" />
-      </div>
-      <div class="field">
-        <label>Imię (na potrzeby demo)</label>
-        <input name="name" required placeholder="Jan" />
-      </div>
-      <button class="btn primary" type="submit">Zaloguj (demo)</button>
-      <p class="meta" style="margin-top:8px">
-        To tylko demo — dane trafią do <code>localStorage</code>.
-      </p>
-    </form>
-  </section>
-</template>
 
-<template id="profile-tpl">
-  <section class="section container">
-    <h2 style="margin:0 0 10px">Twój profil</h2>
-    <div class="glass" style="padding:16px; max-width:640px">
-      <div id="profile-box"></div>
-      <div style="display:flex; gap:8px; margin-top:10px">
-        <button id="btn-logout" class="btn">Wyloguj</button>
-        <a href="#/wydarzenia" class="btn link">Wróć do wydarzeń</a>
+  <template id="login-tpl">
+    <section class="section container">
+      <h2 style="margin:0 0 10px">Logowanie</h2>
+      <form id="login-form" class="glass" style="padding:16px; max-width:520px">
+        <div class="field">
+          <label>E‑mail</label>
+          <input name="email" type="email" required placeholder="jan@example.com" />
+        </div>
+        <div class="field">
+          <label>Imię (na potrzeby demo)</label>
+          <input name="name" required placeholder="Jan" />
+        </div>
+        <button class="btn primary" type="submit">Zaloguj (demo)</button>
+        <p class="meta" style="margin-top:8px">
+          To tylko demo — dane trafią do <code>localStorage</code>.
+        </p>
+      </form>
+    </section>
+  </template>
+
+  <template id="profile-tpl">
+    <section class="section container">
+      <h2 style="margin:0 0 10px">Twój profil</h2>
+      <div class="glass" style="padding:16px; max-width:640px">
+        <div id="profile-box"></div>
+        <div style="display:flex; gap:8px; margin-top:10px">
+          <button id="btn-logout" class="btn">Wyloguj</button>
+          <a href="#/wydarzenia" class="btn link">Wróć do wydarzeń</a>
+        </div>
       </div>
-    </div>
-  </section>
-</template>
+    </section>
+  </template>
 
   <template id="create-tpl">
     <section class="section container">
