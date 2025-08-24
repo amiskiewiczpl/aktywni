@@ -1,17 +1,26 @@
-// DEV – luźne reguły; w kroku 6 zaostrzymy.
+// DEV – luźne reguły; zaostrzymy w kroku 6
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /events/{id} {
+
+    // Kolekcja events
+    match /events/{eventId} {
       allow read: if true;
-      allow write: if request.time < timestamp.date(2099,1,1);
+      allow write: if request.time < timestamp.date(2099,1,1); // DEV
+
+      // ⬇⬇⬇ SUBKOLEKCJA signups (to było brakujące)
+      match /signups/{signupId} {
+        allow read: if true;
+        allow write: if request.time < timestamp.date(2099,1,1); // DEV
+      }
     }
+
+    // Kolekcja users
     match /users/{uid} {
       allow read, write: if request.auth != null && request.auth.uid == uid;
     }
-    match /signups/{id} {
-      allow read, write: if true;
-    }
+
+    // Globalny odczyt innych publicznych treści (jeśli kiedyś się pojawią)
     match /{document=**} {
       allow read: if true;
     }
