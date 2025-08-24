@@ -1,4 +1,7 @@
 // ===== ROUTER (hash) =====
+import { initFirebase } from './firebase.js';
+initFirebase();
+
 const routes = {
   '/': () => renderTemplate('home-tpl'),
   '/wydarzenia': renderEventsView,
