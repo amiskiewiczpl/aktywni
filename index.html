@@ -291,6 +291,7 @@
   // ===== Dane & storage =====
   const STORE_KEY = 'aktywni:events:v1';
   const SIGN_KEY = 'aktywni:signups:v1';
+
   // Bezpieczny generator ID (fallback dla starszych przeglądarek/GitHub Pages)
   function uid(){
     try{ if(window.crypto && window.crypto.randomUUID) return window.crypto.randomUUID(); }catch{}
@@ -418,6 +419,7 @@
 
   // Start
   document.getElementById('year').textContent = new Date().getFullYear();
+  if(!location.hash) location.hash = '#/';
   setActiveNav();
   route();
   </script>
