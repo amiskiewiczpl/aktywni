@@ -146,88 +146,83 @@
 
   <!-- Nowe wydarzenie -->
   <template id="create-tpl">
-    <section class="section container">
-      <h2 style="margin:0 0 10px">Dodaj nowe wydarzenie</h2>
+  <section class="section container">
+    <h2 style="margin:0 0 10px">Dodaj nowe wydarzenie</h2>
 
-      <form id="create-form" class="glass" style="padding:16px">
-        <div class="field">
-          <label>Nazwa wydarzenia</label>
-          <input name="title" required placeholder="Bieg nad Wisłą" />
+    <form id="create-form" class="glass" style="padding:16px">
+      <div class="field">
+        <label>Nazwa wydarzenia</label>
+        <input name="title" required placeholder="Bieg nad Wisłą" />
+      </div>
+
+      <!-- Data i godzina -->
+      <div class="field">
+        <label>Data i godzina</label>
+        <div style="display:flex; gap:8px; align-items:center">
+          <input id="dt" type="datetime-local" name="datetime" required />
+          <span style="color:#fffafa; font-size:18px">📅</span>
+          <span style="color:#fffafa; font-size:18px">⏰</span>
         </div>
+      </div>
 
-        <!-- Data + godzina (natywny kalendarz + time) -->
-        <div class="field" style="display:grid; grid-template-columns:1fr 1fr; gap:12px">
-          <div>
-            <label>Data</label>
-            <input id="date" type="date" required />
-          </div>
-          <div>
-            <label>Godzina</label>
-            <input id="time" type="time" required />
-          </div>
-          <p class="meta" style="grid-column:1/-1">Wybierz z kalendarza i ustaw godzinę — tylko przyszłe terminy.</p>
-        </div>
+      <!-- Miejsce -->
+      <div class="field">
+        <label>Miejsce (wyszukaj na mapie lub skorzystaj z wyszukiwarki na mapie)</label>
+        <input id="place" name="place" required placeholder="np. Bulwary Wiślane, Warszawa" />
+      </div>
 
-        <div class="field">
-          <label>Miejsce (wyszukaj na mapie lub skorzystaj z wyszukiwarki poniżej)</label>
-          <input id="place" name="place" required placeholder="np. Bulwary Wiślane, Warszawa" />
-        </div>
+      <!-- Lokalizacja na mapie -->
+      <div class="field">
+        <label>Lokalizacja na mapie</label>
+        <div id="create-map" style="height:280px; border-radius:14px; overflow:hidden; background:#223"></div>
+        <input type="hidden" name="lat" id="lat" required />
+        <input type="hidden" name="lng" id="lng" required />
+      </div>
 
-        <div class="field">
-          <label>Lokalizacja na mapie</label>
-          <div id="create-map" style="height:280px; border-radius:14px; overflow:hidden; background:#223"></div>
-          <input type="hidden" name="lat" id="lat" required />
-          <input type="hidden" name="lng" id="lng" required />
-        </div>
+      <!-- Sport -->
+      <div class="field">
+        <label>Sport</label>
+        <select id="sport" name="sport" required>
+          <option value="">-- wybierz sport --</option>
+          <option value="siatkowka">Siatkówka</option>
+          <option value="tenis">Tenis</option>
+          <option value="padel">Padel</option>
+          <option value="squash">Squash</option>
+          <option value="pilka-nozna">Piłka Nożna</option>
+          <option value="kolarstwo">Kolarstwo</option>
+          <option value="koszykowka3x3">Koszykówka 3x3</option>
+          <option value="koszykowka">Koszykówka</option>
+          <option value="badminton">Badminton</option>
+          <option value="siatkowka-plazowa">Siatkówka plażowa</option>
+        </select>
+      </div>
 
-        <div class="field">
-          <label>Baner wydarzenia</label>
-          <input id="bannerFile" type="file" accept="image/*" />
-          <input id="bannerUrl" name="banner" type="url" placeholder="lub wklej URL (opcjonalnie)" />
-        </div>
+      <!-- Limit miejsc -->
+      <div class="field">
+        <label>Limit miejsc</label>
+        <input name="capacity" type="number" min="1" value="20" required />
+      </div>
 
-        <!-- Sport, poziom, płeć -->
-        <div class="field" style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px">
-          <div>
-            <label>Sport</label>
-            <select name="sport" id="sport-select" required></select>
-          </div>
-          <div>
-            <label>Poziom</label>
-            <select name="level" id="level-select" required></select>
-          </div>
-          <div>
-            <label>Płeć</label>
-            <select name="sex" id="sex-select" required>
-              <option value="mix">Mix</option>
-              <option value="women">Kobiety</option>
-              <option value="men">Mężczyźni</option>
-            </select>
-          </div>
-        </div>
+      <!-- Baner -->
+      <div class="field">
+        <label>Baner (URL obrazka — opcjonalnie)</label>
+        <input name="banner" type="url" placeholder="https://...jpg" />
+      </div>
 
-        <!-- Pola dodatkowe dla kolarstwa -->
-        <div id="cycling-extra" class="field" style="display:none; grid-template-columns:repeat(2,1fr); gap:12px">
-          <div>
-            <label>Dystans</label>
-            <select name="cyclingDistance" id="cycling-distance"></select>
-          </div>
-          <div>
-            <label>Tempo (km/h)</label>
-            <select name="cyclingPace" id="cycling-pace"></select>
-          </div>
-        </div>
+      <!-- Opis -->
+      <div class="field">
+        <label>Opis</label>
+        <textarea name="desc" rows="3" placeholder="Przyjemne tempo, każdy mile widziany."></textarea>
+      </div>
 
-        <div class="field"><label>Limit miejsc</label><input name="capacity" type="number" min="1" value="20" required /></div>
-        <div class="field"><label>Opis</label><textarea name="desc" rows="3" placeholder="Przyjemne tempo, każdy mile widziany."></textarea></div>
+      <div style="display:flex; gap:8px; align-items:center; justify-content:space-between">
+        <button class="btn primary" type="submit">Zapisz wydarzenie</button>
+        <a class="btn" href="#/wydarzenia">Anuluj</a>
+      </div>
+    </form>
+  </section>
+</template>
 
-        <div style="display:flex; gap:8px; align-items:center; justify-content:space-between">
-          <button class="btn primary" type="submit">Zapisz wydarzenie</button>
-          <a class="btn" href="#/wydarzenia">Anuluj</a>
-        </div>
-      </form>
-    </section>
-  </template>
 
   <!-- Modal szczegółów wydarzenia -->
   <div class="modal" id="event-modal" aria-hidden="true" role="dialog" aria-label="Szczegóły wydarzenia">
