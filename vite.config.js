@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  base: '/aktywni/',     // nazwa repo
-  build: { outDir: 'docs' }
+  base: '/aktywni/',          // <<< NAZWA REPO!
+  build: { outDir: 'docs' }   // GitHub Pages serwuje folder 'docs' z gałęzi default
 });

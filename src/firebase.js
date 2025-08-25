@@ -13,10 +13,19 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
+// 🔒 Nie inicjalizuj Firebase, jeśli nie ma wymaganych env (np. na GitHub Pages)
+const required = ['apiKey','authDomain','projectId','storageBucket','messagingSenderId','appId'];
+const hasConfig = required.every(k => typeof firebaseConfig[k] === 'string' && firebaseConfig[k]);
+
 let app, auth, db, storage;
 
 export function initFirebase() {
   if (app) return { app, auth, db, storage };
+
+  if (!hasConfig) {
+    console.warn('[Firebase] Pomijam inicjalizację – brak konfiguracji env (prod bez kluczy). UI działa, backend dojdzie później.');
+    return { app: null, auth: null, db: null, storage: null };
+  }
 
   app = initializeApp(firebaseConfig);
   auth = getAuth(app);
