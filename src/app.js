@@ -64,9 +64,22 @@ function guardOrganizer(fn){
   fn();
 }
 
+// ===== S P O R T Y  + poziomy =====
+const SPORTS = {
+  'Siatkówka plażowa': [
+    'A1 – Początkujący','A2 – Odbijający','A3 – Grający',
+    'B1 – Średniozaawansowany','B2 – Zaawansowany',
+    'C1 – Półzawodowy','C2 – Zawodowy – PRO'
+  ],
+  'Tenis (NTRP)': ['1.0','1.5','2.0','2.5','3.0','3.5','4.0','4.5','5.0','5.5','6.0','7.0'],
+  'Bieganie': ['Początkujący','Rekreacyjny','Średniozaawansowany','Zaawansowany'],
+  'Kolarstwo': ['Rekreacyjne','Treningowe','Amatorskie wyścigi','Zaawansowane wyścigi']
+};
+
 // ===== DANE DEMO (localStorage) =====
 const STORE_KEY = 'aktywni:events:v1';
 const SIGN_KEY  = 'aktywni:signups:v1';
+const SKILLS_KEY= 'aktywni:user:skills'; // mapowanie sport -> poziom
 
 function uid(){
   try{ if(window.crypto && window.crypto.randomUUID) return window.crypto.randomUUID(); }catch{}
@@ -74,9 +87,9 @@ function uid(){
 }
 
 const sample = [
-  { id: uid(), title: 'Bieg nad Wisłą', datetime: addDaysISO(3, '18:00'), place:'Bulwary Wiślane, Warszawa', lat:52.237, lng:21.022, capacity: 20, taken: 5, banner:'https://images.unsplash.com/photo-1546483875-ad9014c88eba?q=80&w=1200&auto=format&fit=crop', desc:'Lekki bieg ~6km, tempo konwersacyjne. Każdy mile widziany.' },
-  { id: uid(), title: 'Siatkówka plażowa', datetime: addDaysISO(5, '17:30'), place:'Plaża Poniatówka', lat:52.234, lng:21.040, capacity: 12, taken: 9, banner:'https://images.unsplash.com/photo-1517649763962-0c623066013b?q=80&w=1200&auto=format&fit=crop', desc:'Gramy 3×3, poziom rekreacyjny. Zabierz wodę i uśmiech :)' },
-  { id: uid(), title: 'Joga w parku', datetime: addDaysISO(2, '08:30'), place:'Park Skaryszewski', lat:52.244, lng:21.056, capacity: 25, taken: 12, banner:'https://images.unsplash.com/photo-1552196563-55cd4e45efb3?q=80&w=1200&auto=format&fit=crop', desc:'Poranna sesja vinyasa, mata mile widziana.' }
+  { id: uid(), title: 'Bieg nad Wisłą', datetime: addDaysISO(3, '18:00'), place:'Bulwary Wiślane, Warszawa', lat:52.237, lng:21.022, capacity: 20, taken: 5, banner:'https://images.unsplash.com/photo-1546483875-ad9014c88eba?q=80&w=1200&auto=format&fit=crop', desc:'Lekki bieg ~6km, tempo konwersacyjne. Każdy mile widziany.', sport:'Bieganie', level:'Rekreacyjny', category:'mix' },
+  { id: uid(), title: 'Siatkówka plażowa — sparing', datetime: addDaysISO(5, '17:30'), place:'Plaża Poniatówka', lat:52.234, lng:21.040, capacity: 12, taken: 9, banner:'https://images.unsplash.com/photo-1517649763962-0c623066013b?q=80&w=1200&auto=format&fit=crop', desc:'Gramy 3×3, poziom rekreacyjny. Zabierz wodę i uśmiech :)', sport:'Siatkówka plażowa', level:'A2 – Odbijający', category:'mix' },
+  { id: uid(), title: 'Joga w parku', datetime: addDaysISO(2, '08:30'), place:'Park Skaryszewski', lat:52.244, lng:21.056, capacity: 25, taken: 12, banner:'https://images.unsplash.com/photo-1552196563-55cd4e45efb3?q=80&w=1200&auto=format&fit=crop', desc:'Poranna sesja vinyasa, mata mile widziana.', sport:'Bieganie', level:'Początkujący', category:'women' }
 ];
 
 function addDaysISO(d, time='10:00'){
@@ -95,6 +108,8 @@ function loadEvents(){
 function saveEvents(list){ localStorage.setItem(STORE_KEY, JSON.stringify(list)); }
 function loadSignups(){ return JSON.parse(localStorage.getItem(SIGN_KEY) || '{}'); }
 function saveSignups(v){ localStorage.setItem(SIGN_KEY, JSON.stringify(v)); }
+function loadSkills(){ return JSON.parse(localStorage.getItem(SKILLS_KEY) || '{}'); }
+function saveSkills(v){ localStorage.setItem(SKILLS_KEY, JSON.stringify(v)); }
 
 // ===== LISTA WYDARZEŃ =====
 function renderEventsView(){
@@ -112,6 +127,7 @@ function eventCard(ev){
     <div>
       <div class="title">${ev.title}</div>
       <div class="meta">${fmtDate(ev.datetime)} · ${ev.place}</div>
+      <div class="meta">🏷️ ${ev.sport} — <strong>${ev.level}</strong> · ${catLabel(ev.category)}</div>
     </div>
     <div style="display:flex; gap:8px; align-items:center">
       ${capacityPillHTML(ev)}
@@ -128,16 +144,33 @@ function capacityPillHTML(ev){
   const cls = left===0? 'none' : left<5? 'low' : 'ok';
   return `<span id="m-cap-pill" class="pill ${cls}">${left} wolnych</span>`;
 }
+function catLabel(c){
+  if(c==='women') return 'Kobiety';
+  if(c==='men') return 'Mężczyźni';
+  return 'Mix';
+}
 
 // ===== FORMULARZ „NOWE WYDARZENIE” =====
 function initCreateForm(){
-  // 1) Datetime: blokada przeszłości
+  // data/godzina: natywny picker + tylko przyszłość + bez ograniczenia minut
   const dt = document.getElementById('dt');
   const now = new Date();
   now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+  dt.removeAttribute('step'); // pozwól np. 11:11
   dt.min = now.toISOString().slice(0,16);
 
-  // 2) Mapa + geokoder
+  // wypełnij sport/poziom
+  const sportSel = document.getElementById('sport-select');
+  const levelSel = document.getElementById('level-select');
+  sportSel.innerHTML = Object.keys(SPORTS).map(s=>`<option value="${s}">${s}</option>`).join('');
+  const setLevels = () => {
+    const lvls = SPORTS[sportSel.value] || [];
+    levelSel.innerHTML = lvls.map(l=>`<option value="${l}">${l}</option>`).join('');
+  };
+  sportSel.addEventListener('change', setLevels);
+  setLevels();
+
+  // Mapa + geokoder (Photon/Komoot)
   const mapEl = document.getElementById('create-map');
   const placeInput = document.getElementById('place');
   const latEl = document.getElementById('lat');
@@ -152,7 +185,8 @@ function initCreateForm(){
 
   const geocoder = L.Control.geocoder({
     defaultMarkGeocode: false,
-    placeholder: 'Szukaj miejsca…'
+    placeholder: 'Szukaj miejsca…',
+    geocoder: L.Control.Geocoder.photon() // większa baza
   })
   .on('markgeocode', function(e) {
     const c = e.geocode.center;
@@ -160,22 +194,43 @@ function initCreateForm(){
     pin.setLatLng(c);
     latEl.value = c.lat.toFixed(6);
     lngEl.value = c.lng.toFixed(6);
-    if (!placeInput.value) placeInput.value = e.geocode.name;
+    placeInput.value = e.geocode.name || placeInput.value;
   })
   .addTo(mapCreate);
 
-  mapCreate.on('click', (ev)=>{
-    pin.setLatLng(ev.latlng);
-    latEl.value = ev.latlng.lat.toFixed(6);
-    lngEl.value = ev.latlng.lng.toFixed(6);
-  });
-  pin.on('dragend', ()=>{
-    const p = pin.getLatLng();
-    latEl.value = p.lat.toFixed(6);
-    lngEl.value = p.lng.toFixed(6);
+  // klik/drag na mapie → reverse geocode i uzupełnij "Miejsce"
+  async function reverseGeocode(lat, lng){
+    try{
+      const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`;
+      const r = await fetch(url, { headers: { 'Accept-Language': 'pl' }});
+      const j = await r.json();
+      return j.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+    }catch{ return `${lat.toFixed(5)}, ${lng.toFixed(5)}`; }
+  }
+  async function setByLatLng(c){
+    mapCreate.setView(c, 15);
+    pin.setLatLng(c);
+    latEl.value = c.lat.toFixed(6);
+    lngEl.value = c.lng.toFixed(6);
+    placeInput.value = await reverseGeocode(c.lat, c.lng);
+  }
+  mapCreate.on('click', (ev)=> setByLatLng(ev.latlng));
+  pin.on('dragend', ()=> setByLatLng(pin.getLatLng()));
+
+  // wpis w polu "Miejsce" → geocode i przesuń mapę
+  placeInput.addEventListener('change', ()=>{
+    const q = placeInput.value?.trim();
+    if(!q) return;
+    const g = L.Control.Geocoder.photon();
+    g.geocode(q, (results)=>{
+      if(results && results[0]){
+        const c = results[0].center;
+        setByLatLng(c);
+      }
+    });
   });
 
-  // 3) Submit: upload pliku do Storage (jeśli dostępny) lub URL
+  // Submit: upload do Storage (jeśli jest) lub URL
   const form = document.getElementById('create-form');
   form.addEventListener('submit', async (e)=>{
     e.preventDefault();
@@ -185,7 +240,7 @@ function initCreateForm(){
     ev.id = uid();
     ev.capacity = Number(ev.capacity)||1; ev.taken = 0;
     ev.lat = parseFloat(ev.lat); ev.lng = parseFloat(ev.lng);
-    ev.datetime = fd.get('datetime'); // ISO "YYYY-MM-DDTHH:mm"
+    ev.datetime = fd.get('datetime'); // "YYYY-MM-DDTHH:mm"
 
     const file = document.getElementById('bannerFile').files[0];
     if (file && storage) {
@@ -195,8 +250,7 @@ function initCreateForm(){
         const r = ref(storage, path);
         await uploadBytes(r, file);
         ev.banner = await getDownloadURL(r);
-      } catch (err) {
-        console.warn('[upload] fallback na URL:', err);
+      } catch {
         ev.banner = document.getElementById('bannerUrl').value || '';
       }
     } else {
@@ -232,6 +286,27 @@ function renderProfileView(){
       <div style="font-weight:700">${u.name || '(bez imienia)'}</div>
       <div class="meta">${u.email}</div>
     `;
+
+    // formularz poziomów
+    const skills = loadSkills();
+    const form = document.getElementById('skills-form');
+    form.innerHTML = Object.keys(SPORTS).map(s=>{
+      const options = SPORTS[s].map(l=>`<option ${skills[s]===l?'selected':''}>${l}</option>`).join('');
+      return `
+        <div class="field" style="display:grid; grid-template-columns:200px 1fr; gap:12px; align-items:center">
+          <label style="margin:0">${s}</label>
+          <select name="${s}">${options}</select>
+        </div>`;
+    }).join('');
+
+    document.getElementById('btn-save-skills').addEventListener('click', (e)=>{
+      e.preventDefault();
+      const data = {};
+      form.querySelectorAll('select').forEach(sel=> { data[sel.name] = sel.value; });
+      saveSkills(data);
+      alert('Zapisano poziomy.');
+    });
+
     document.getElementById('btn-logout').addEventListener('click', ()=>{
       signOut();
       location.hash = '#/login';
@@ -254,6 +329,7 @@ function openEventModal(id){
   document.getElementById('m-when').textContent = fmtDate(ev.datetime);
   document.getElementById('m-place').textContent = ev.place;
   document.getElementById('m-desc').textContent = ev.desc||'';
+  document.getElementById('m-sport').innerHTML = `🏷️ ${ev.sport} — <strong>${ev.level}</strong> · ${catLabel(ev.category)}`;
 
   const left = Math.max(0, ev.capacity - (ev.taken||0));
   const pill = document.getElementById('m-cap-pill');

@@ -9,32 +9,41 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 
-  <!-- Leaflet (mini‑mapa) -->
+  <!-- Leaflet (mapa) -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
-  <!-- Leaflet Geocoder (wyszukiwarka adresów dla mapy formularza) -->
+  <!-- Leaflet Geocoder (Photon/Komoot – większa baza niż domyślny Nominatim) -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
   <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
 
   <link rel="stylesheet" href="/src/styles.css" />
 
-  <!-- UX/A11y (krok 3) -->
+  <!-- UX/A11y -->
   <style>
     :focus-visible{ outline:3px solid #66e1c6; outline-offset:3px; border-radius:6px; }
     .skip-link{ position:absolute; left:-9999px; top:auto; width:1px; height:1px; overflow:hidden; }
     .skip-link:focus{ position:fixed; left:16px; top:16px; width:auto; height:auto; z-index:9999; background:#0b1020; color:#fff; padding:10px 14px; border-radius:8px; box-shadow:0 6px 18px rgba(0,0,0,.4); }
     header .btn:focus-visible, header .btn:hover{ box-shadow:0 0 0 3px rgba(102,225,198,.35) inset; }
+
+    /* Ciemny motyw dla inputu geokodera */
+    .leaflet-control-geocoder,
+    .leaflet-control-geocoder-expanded { background:#0f172a !important; border:1px solid #223 !important; }
+    .leaflet-control-geocoder-form input {
+      color:#e5e7eb !important; background:#0b1020 !important; border:1px solid #334155 !important;
+      padding:.45rem .6rem !important; border-radius:.6rem !important;
+    }
+    .leaflet-control-geocoder-alternatives { background:#0f172a !important; color:#e5e7eb !important; }
+    .leaflet-control-geocoder-alternatives a { color:#e5e7eb !important; }
+    .leaflet-control-geocoder-icon { filter: invert(1) opacity(.9); }
     @media (prefers-reduced-motion: reduce){
       *{ animation-duration:0.001ms !important; animation-iteration-count:1 !important; transition-duration:0.001ms !important; scroll-behavior:auto !important; }
     }
   </style>
 </head>
 <body>
-  <!-- Skip to content -->
   <a class="skip-link" href="#app">Pomiń nawigację, przejdź do treści</a>
 
-  <!-- Nawigacja -->
   <header class="nav">
     <div class="nav-inner container">
       <a href="#/" class="brand"><span class="logo"></span> Aktywni</a>
@@ -47,10 +56,9 @@
     </div>
   </header>
 
-  <!-- Główna zawartość (SPA) -->
   <main id="app" role="main" tabindex="-1" aria-live="polite"></main>
 
-  <!-- Szablony widoków -->
+  <!-- Home -->
   <template id="home-tpl">
     <section class="hero container">
       <div class="hero-grid">
@@ -72,23 +80,14 @@
     <section class="section container">
       <h2 style="margin:0 0 12px">Jak to działa?</h2>
       <div class="cards">
-        <div class="card">
-          <strong>Krok 1</strong>
-          <p class="meta">Wybierz wydarzenie z listy i otwórz szczegóły.</p>
-        </div>
-        <div class="card">
-          <strong>Krok 2</strong>
-          <p class="meta">Sprawdź datę, miejsce i podgląd na mini‑mapie.</p>
-        </div>
-        <div class="card">
-          <strong>Krok 3</strong>
-          <p class="meta">Zapisz się. Liczba miejsc aktualizuje się automatycznie*</p>
-          <p class="meta">*W demo zapisy są lokalne (na tym urządzeniu).</p>
-        </div>
+        <div class="card"><strong>Krok 1</strong><p class="meta">Wybierz wydarzenie z listy i otwórz szczegóły.</p></div>
+        <div class="card"><strong>Krok 2</strong><p class="meta">Sprawdź datę, miejsce i podgląd na mini‑mapie.</p></div>
+        <div class="card"><strong>Krok 3</strong><p class="meta">Zapisz się. Liczba miejsc aktualizuje się automatycznie*</p><p class="meta">*W demo zapisy są lokalne.</p></div>
       </div>
     </section>
   </template>
 
+  <!-- Lista wydarzeń -->
   <template id="events-tpl">
     <section class="section container">
       <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px">
@@ -99,32 +98,30 @@
     </section>
   </template>
 
+  <!-- Login -->
   <template id="login-tpl">
     <section class="section container">
       <h2 style="margin:0 0 10px">Logowanie</h2>
       <form id="login-form" class="glass" style="padding:16px; max-width:520px">
-        <div class="field">
-          <label>E‑mail</label>
-          <input name="email" type="email" required placeholder="jan@example.com" />
-        </div>
-        <div class="field">
-          <label>Imię (na potrzeby demo)</label>
-          <input name="name" required placeholder="Jan" />
-        </div>
+        <div class="field"><label>E‑mail</label><input name="email" type="email" required placeholder="jan@example.com" /></div>
+        <div class="field"><label>Imię (na potrzeby demo)</label><input name="name" required placeholder="Jan" /></div>
         <button class="btn primary" type="submit">Zaloguj (demo)</button>
-        <p class="meta" style="margin-top:8px">
-          To tylko demo — dane trafią do <code>localStorage</code>.
-        </p>
+        <p class="meta" style="margin-top:8px">To tylko demo — dane trafiają lokalnie.</p>
       </form>
     </section>
   </template>
 
+  <!-- Profil + poziomy sportów -->
   <template id="profile-tpl">
     <section class="section container">
       <h2 style="margin:0 0 10px">Twój profil</h2>
-      <div class="glass" style="padding:16px; max-width:640px">
+      <div class="glass" style="padding:16px; max-width:720px">
         <div id="profile-box"></div>
-        <div style="display:flex; gap:8px; margin-top:10px">
+        <hr style="border:none; border-top:1px solid #223; margin:12px 0">
+        <h3 style="margin:0 0 8px; font-size:18px">Poziomy w sportach</h3>
+        <form id="skills-form" class="stack" style="display:grid; gap:10px"></form>
+        <div style="display:flex; gap:8px; margin-top:12px">
+          <button id="btn-save-skills" class="btn primary">Zapisz poziomy</button>
           <button id="btn-logout" class="btn">Wyloguj</button>
           <a href="#/wydarzenia" class="btn link">Wróć do wydarzeń</a>
         </div>
@@ -132,25 +129,22 @@
     </section>
   </template>
 
-  <!-- NOWY formularz: wyszukiwarka miejsca + mapa + upload banera -->
+  <!-- Nowe wydarzenie (z mapą, geokoderem i uploadem) -->
   <template id="create-tpl">
     <section class="section container">
       <h2 style="margin:0 0 10px">Dodaj nowe wydarzenie</h2>
 
       <form id="create-form" class="glass" style="padding:16px">
-        <div class="field">
-          <label>Nazwa wydarzenia</label>
-          <input name="title" required placeholder="Bieg nad Wisłą" />
-        </div>
+        <div class="field"><label>Nazwa wydarzenia</label><input name="title" required placeholder="Bieg nad Wisłą" /></div>
 
         <div class="field">
           <label>Data i godzina</label>
-          <input id="dt" type="datetime-local" name="datetime" required step="900" />
+          <input id="dt" type="datetime-local" name="datetime" required />
           <p class="meta">Wybierz z kalendarza — tylko przyszłe daty.</p>
         </div>
 
         <div class="field">
-          <label>Miejsce (adres)</label>
+          <label>Miejsce (zmapowane z wyszukiwarki)</label>
           <input id="place" name="place" required placeholder="np. Bulwary Wiślane, Warszawa" />
         </div>
 
@@ -159,25 +153,36 @@
           <div id="create-map" style="height:280px; border-radius:14px; overflow:hidden; background:#223"></div>
           <input type="hidden" name="lat" id="lat" required />
           <input type="hidden" name="lng" id="lng" required />
-          <p class="meta">Użyj pola wyszukiwania na mapie albo kliknij na mapę, aby ustawić pinezkę.</p>
+          <p class="meta">Szukaj miejsc w polu na mapie lub kliknij na mapę — adres uzupełni się automatycznie.</p>
         </div>
 
         <div class="field">
           <label>Baner wydarzenia</label>
           <input id="bannerFile" type="file" accept="image/*" />
           <input id="bannerUrl" name="banner" type="url" placeholder="lub wklej URL (opcjonalnie)" />
-          <p class="meta">Na DEV wgra się do Firebase Storage; na Pages możesz wkleić URL.</p>
         </div>
 
-        <div class="field">
-          <label>Limit miejsc</label>
-          <input name="capacity" type="number" min="1" value="20" required />
+        <div class="field" style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px">
+          <div>
+            <label>Sport</label>
+            <select name="sport" id="sport-select" required></select>
+          </div>
+          <div>
+            <label>Poziom</label>
+            <select name="level" id="level-select" required></select>
+          </div>
+          <div>
+            <label>Kategoria</label>
+            <select name="category" id="cat-select" required>
+              <option value="mix">Mix</option>
+              <option value="women">Kobiety</option>
+              <option value="men">Mężczyźni</option>
+            </select>
+          </div>
         </div>
 
-        <div class="field">
-          <label>Opis</label>
-          <textarea name="desc" rows="3" placeholder="Przyjemne tempo, każdy mile widziany."></textarea>
-        </div>
+        <div class="field"><label>Limit miejsc</label><input name="capacity" type="number" min="1" value="20" required /></div>
+        <div class="field"><label>Opis</label><textarea name="desc" rows="3" placeholder="Przyjemne tempo, każdy mile widziany."></textarea></div>
 
         <div style="display:flex; gap:8px; align-items:center; justify-content:space-between">
           <button class="btn primary" type="submit">Zapisz wydarzenie</button>
@@ -207,19 +212,14 @@
                 <div class="title" id="m-title-sm"></div>
                 <div class="meta" id="m-when"></div>
                 <div class="meta" id="m-place"></div>
+                <div class="meta" id="m-sport"></div>
               </div>
               <span id="m-cap-pill" class="pill">--</span>
             </div>
           </div>
           <form id="join-form" class="glass" style="padding:12px">
-            <div class="field">
-              <label>Twoje imię</label>
-              <input name="name" required placeholder="Ania" />
-            </div>
-            <div class="field">
-              <label>Twój e‑mail (opcjonalnie)</label>
-              <input name="email" type="email" placeholder="ania@example.com" />
-            </div>
+            <div class="field"><label>Twoje imię</label><input name="name" required placeholder="Ania" /></div>
+            <div class="field"><label>Twój e‑mail (opcjonalnie)</label><input name="email" type="email" placeholder="ania@example.com" /></div>
             <button class="btn primary" type="submit">Zapisz się</button>
             <div id="join-msg" style="margin-top:8px"></div>
           </form>
