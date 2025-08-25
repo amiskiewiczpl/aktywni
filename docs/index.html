@@ -13,7 +13,7 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
-  <!-- Leaflet Geocoder (Photon/Komoot – większa baza niż domyślny Nominatim) -->
+  <!-- Leaflet Geocoder (Photon/Komoot – większa baza) -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
   <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
 
@@ -39,7 +39,7 @@
       *{ animation-duration:0.001ms !important; animation-iteration-count:1 !important; transition-duration:0.001ms !important; scroll-behavior:auto !important; }
     }
   </style>
-  <script type="module" crossorigin src="/aktywni/assets/index-QHD1DNiC.js"></script>
+  <script type="module" crossorigin src="/aktywni/assets/index-JNSkmA-Q.js"></script>
   <link rel="stylesheet" crossorigin href="/aktywni/assets/index-BCHqflRY.css">
 </head>
 <body>
@@ -116,11 +116,25 @@
   <template id="profile-tpl">
     <section class="section container">
       <h2 style="margin:0 0 10px">Twój profil</h2>
-      <div class="glass" style="padding:16px; max-width:720px">
+      <div class="glass" style="padding:16px; max-width:780px">
         <div id="profile-box"></div>
         <hr style="border:none; border-top:1px solid #223; margin:12px 0">
         <h3 style="margin:0 0 8px; font-size:18px">Poziomy w sportach</h3>
         <form id="skills-form" class="stack" style="display:grid; gap:10px"></form>
+
+        <!-- Preferencje kolarstwa w profilu -->
+        <div id="skills-cycling" class="stack" style="display:none; gap:10px; margin-top:8px">
+          <h4 style="margin:8px 0 0; font-size:16px">Kolarstwo — preferencje</h4>
+          <div class="field" style="display:grid; grid-template-columns:200px 1fr; gap:12px; align-items:center">
+            <label>Dystans</label>
+            <select id="skill-cyc-dist"></select>
+          </div>
+          <div class="field" style="display:grid; grid-template-columns:200px 1fr; gap:12px; align-items:center">
+            <label>Tempo (km/h)</label>
+            <select id="skill-cyc-pace"></select>
+          </div>
+        </div>
+
         <div style="display:flex; gap:8px; margin-top:12px">
           <button id="btn-save-skills" class="btn primary">Zapisz poziomy</button>
           <button id="btn-logout" class="btn">Wyloguj</button>
@@ -130,22 +144,32 @@
     </section>
   </template>
 
-  <!-- Nowe wydarzenie (z mapą, geokoderem i uploadem) -->
+  <!-- Nowe wydarzenie -->
   <template id="create-tpl">
     <section class="section container">
       <h2 style="margin:0 0 10px">Dodaj nowe wydarzenie</h2>
 
       <form id="create-form" class="glass" style="padding:16px">
-        <div class="field"><label>Nazwa wydarzenia</label><input name="title" required placeholder="Bieg nad Wisłą" /></div>
-
         <div class="field">
-          <label>Data i godzina</label>
-          <input id="dt" type="datetime-local" name="datetime" required />
-          <p class="meta">Wybierz z kalendarza — tylko przyszłe daty.</p>
+          <label>Nazwa wydarzenia</label>
+          <input name="title" required placeholder="Bieg nad Wisłą" />
+        </div>
+
+        <!-- Data + godzina (natywny kalendarz + time) -->
+        <div class="field" style="display:grid; grid-template-columns:1fr 1fr; gap:12px">
+          <div>
+            <label>Data</label>
+            <input id="date" type="date" required />
+          </div>
+          <div>
+            <label>Godzina</label>
+            <input id="time" type="time" required />
+          </div>
+          <p class="meta" style="grid-column:1/-1">Wybierz z kalendarza i ustaw godzinę — tylko przyszłe terminy.</p>
         </div>
 
         <div class="field">
-          <label>Miejsce (zmapowane z wyszukiwarki)</label>
+          <label>Miejsce (wyszukaj na mapie lub skorzystaj z wyszukiwarki poniżej)</label>
           <input id="place" name="place" required placeholder="np. Bulwary Wiślane, Warszawa" />
         </div>
 
@@ -154,7 +178,6 @@
           <div id="create-map" style="height:280px; border-radius:14px; overflow:hidden; background:#223"></div>
           <input type="hidden" name="lat" id="lat" required />
           <input type="hidden" name="lng" id="lng" required />
-          <p class="meta">Szukaj miejsc w polu na mapie lub kliknij na mapę — adres uzupełni się automatycznie.</p>
         </div>
 
         <div class="field">
@@ -163,6 +186,7 @@
           <input id="bannerUrl" name="banner" type="url" placeholder="lub wklej URL (opcjonalnie)" />
         </div>
 
+        <!-- Sport, poziom, płeć -->
         <div class="field" style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px">
           <div>
             <label>Sport</label>
@@ -173,12 +197,24 @@
             <select name="level" id="level-select" required></select>
           </div>
           <div>
-            <label>Kategoria</label>
-            <select name="category" id="cat-select" required>
+            <label>Płeć</label>
+            <select name="sex" id="sex-select" required>
               <option value="mix">Mix</option>
               <option value="women">Kobiety</option>
               <option value="men">Mężczyźni</option>
             </select>
+          </div>
+        </div>
+
+        <!-- Pola dodatkowe dla kolarstwa -->
+        <div id="cycling-extra" class="field" style="display:none; grid-template-columns:repeat(2,1fr); gap:12px">
+          <div>
+            <label>Dystans</label>
+            <select name="cyclingDistance" id="cycling-distance"></select>
+          </div>
+          <div>
+            <label>Tempo (km/h)</label>
+            <select name="cyclingPace" id="cycling-pace"></select>
           </div>
         </div>
 
@@ -214,6 +250,7 @@
                 <div class="meta" id="m-when"></div>
                 <div class="meta" id="m-place"></div>
                 <div class="meta" id="m-sport"></div>
+                <div class="meta" id="m-cycling" style="display:none"></div>
               </div>
               <span id="m-cap-pill" class="pill">--</span>
             </div>
