@@ -1,6 +1,6 @@
 // ===== ROUTER (hash) =====
 import { initFirebase } from './firebase.js';
-initFirebase();
+const { storage } = initFirebase(); // na Pages może być null
 
 const routes = {
   '/': () => renderTemplate('home-tpl'),
@@ -49,7 +49,7 @@ function updateAuthNav(){
     login.style.display = 'none';
     prof.style.display  = '';
     prof.textContent    = u.name ? `Profil (${u.name})` : 'Profil';
-    create.classList.remove('link'); // organizer "demo" ma dostęp
+    create.classList.remove('link');
   }else{
     login.style.display = '';
     prof.style.display  = 'none';
@@ -58,7 +58,6 @@ function updateAuthNav(){
   }
 }
 
-// Na razie każdy zalogowany jest „organizatorem” demka
 function guardOrganizer(fn){
   const u = getUser();
   if(!u){ location.hash = '#/login'; return; }
@@ -130,16 +129,80 @@ function capacityPillHTML(ev){
   return `<span id="m-cap-pill" class="pill ${cls}">${left} wolnych</span>`;
 }
 
-// ===== TWORZENIE WYDARZENIA =====
+// ===== FORMULARZ „NOWE WYDARZENIE” =====
 function initCreateForm(){
+  // 1) Datetime: blokada przeszłości
+  const dt = document.getElementById('dt');
+  const now = new Date();
+  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+  dt.min = now.toISOString().slice(0,16);
+
+  // 2) Mapa + geokoder
+  const mapEl = document.getElementById('create-map');
+  const placeInput = document.getElementById('place');
+  const latEl = document.getElementById('lat');
+  const lngEl = document.getElementById('lng');
+
+  const mapCreate = L.map(mapEl, { attributionControl:false, zoomControl:true });
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(mapCreate);
+  const warsaw = [52.231, 21.007];
+  mapCreate.setView(warsaw, 12);
+  let pin = L.marker(warsaw, { draggable:true }).addTo(mapCreate);
+  latEl.value = warsaw[0]; lngEl.value = warsaw[1];
+
+  const geocoder = L.Control.geocoder({
+    defaultMarkGeocode: false,
+    placeholder: 'Szukaj miejsca…'
+  })
+  .on('markgeocode', function(e) {
+    const c = e.geocode.center;
+    mapCreate.setView(c, 15);
+    pin.setLatLng(c);
+    latEl.value = c.lat.toFixed(6);
+    lngEl.value = c.lng.toFixed(6);
+    if (!placeInput.value) placeInput.value = e.geocode.name;
+  })
+  .addTo(mapCreate);
+
+  mapCreate.on('click', (ev)=>{
+    pin.setLatLng(ev.latlng);
+    latEl.value = ev.latlng.lat.toFixed(6);
+    lngEl.value = ev.latlng.lng.toFixed(6);
+  });
+  pin.on('dragend', ()=>{
+    const p = pin.getLatLng();
+    latEl.value = p.lat.toFixed(6);
+    lngEl.value = p.lng.toFixed(6);
+  });
+
+  // 3) Submit: upload pliku do Storage (jeśli dostępny) lub URL
   const form = document.getElementById('create-form');
-  form.addEventListener('submit', (e)=>{
+  form.addEventListener('submit', async (e)=>{
     e.preventDefault();
+
     const fd = new FormData(form);
     const ev = Object.fromEntries(fd.entries());
     ev.id = uid();
     ev.capacity = Number(ev.capacity)||1; ev.taken = 0;
     ev.lat = parseFloat(ev.lat); ev.lng = parseFloat(ev.lng);
+    ev.datetime = fd.get('datetime'); // ISO "YYYY-MM-DDTHH:mm"
+
+    const file = document.getElementById('bannerFile').files[0];
+    if (file && storage) {
+      try {
+        const { ref, uploadBytes, getDownloadURL } = await import('firebase/storage');
+        const path = `banners/${ev.id}-${file.name}`;
+        const r = ref(storage, path);
+        await uploadBytes(r, file);
+        ev.banner = await getDownloadURL(r);
+      } catch (err) {
+        console.warn('[upload] fallback na URL:', err);
+        ev.banner = document.getElementById('bannerUrl').value || '';
+      }
+    } else {
+      ev.banner = document.getElementById('bannerUrl').value || '';
+    }
+
     saveEvents([ ...loadEvents(), ev ]);
     location.hash = '#/wydarzenia';
   });
@@ -192,7 +255,6 @@ function openEventModal(id){
   document.getElementById('m-place').textContent = ev.place;
   document.getElementById('m-desc').textContent = ev.desc||'';
 
-  // 🟢 Ważne: NIE USUWAJ elementu #m-cap-pill (bo potem getElementById zwróci null).
   const left = Math.max(0, ev.capacity - (ev.taken||0));
   const pill = document.getElementById('m-cap-pill');
   pill.textContent = `${left} wolnych`;
@@ -204,7 +266,6 @@ function openEventModal(id){
     ? `<img src="${ev.banner}" alt="${ev.title}" style="width:100%; height:100%; object-fit:cover">`
     : '';
 
-  // Mapa: sprzątamy poprzednią instancję, potem tworzymy świeżą
   if (map) { try { map.remove(); } catch(_) {} map = null; marker = null; }
   const mapEl = document.getElementById('map');
   mapEl.innerHTML = '';
@@ -214,14 +275,13 @@ function openEventModal(id){
   map.setView([ev.lat, ev.lng], 14);
   setTimeout(()=> map.invalidateSize(), 150);
 
-  // A11y: fokus do zamykania + Esc + prosty focus-trap
   const closeBtn = document.getElementById('m-close');
   closeBtn.focus();
   escHandler = (e)=>{
     if(e.key === 'Escape') closeModal();
     if(e.key === 'Tab'){
-      const focusables = modal.querySelectorAll('button, [href], input, textarea, select, [tabindex]:not([tabindex="-1"])');
-      const list = Array.from(focusables).filter(el=> !el.disabled && el.offsetParent !== null);
+      const f = modal.querySelectorAll('button, [href], input, textarea, select, [tabindex]:not([tabindex="-1"])');
+      const list = Array.from(f).filter(el=> !el.disabled && el.offsetParent !== null);
       if(!list.length) return;
       const first = list[0], last = list[list.length-1];
       if(e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
@@ -230,7 +290,6 @@ function openEventModal(id){
   };
   document.addEventListener('keydown', escHandler);
 
-  // Formularz zapisów
   const form = document.getElementById('join-form');
   form.onsubmit = (e)=>{
     e.preventDefault();
