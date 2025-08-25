@@ -118,13 +118,16 @@ function eventCard(ev){
       ${capacityPillHTML(ev)}
       <button class="btn" aria-label="Otwórz szczegóły">Szczegóły</button>
     </div>`;
-  li.querySelector('button').addEventListener('click', ()=> openEventModal(ev.id));
+  li.querySelector('button').addEventListener('click', (e)=> {
+    lastFocused = e.currentTarget;
+    openEventModal(ev.id);
+  });
   return li;
 }
 function capacityPillHTML(ev){
   const left = Math.max(0, ev.capacity - (ev.taken||0));
   const cls = left===0? 'none' : left<5? 'low' : 'ok';
-  return `<span class="pill ${cls}">${left} wolnych</span>`;
+  return `<span id="m-cap-pill" class="pill ${cls}">${left} wolnych</span>`;
 }
 
 // ===== TWORZENIE WYDARZENIA =====
@@ -174,38 +177,69 @@ function renderProfileView(){
 }
 
 // ===== MODAL + MAPA =====
-let map, marker;
+let map = null, marker = null, escHandler = null, lastFocused = null;
+
 function openEventModal(id){
   const ev = loadEvents().find(x=>x.id===id); if(!ev) return;
+
+  const modal = document.getElementById('event-modal');
+  modal.classList.add('open');
+  modal.setAttribute('aria-hidden','false');
 
   document.getElementById('m-title').textContent = ev.title;
   document.getElementById('m-title-sm').textContent = ev.title;
   document.getElementById('m-when').textContent = fmtDate(ev.datetime);
   document.getElementById('m-place').textContent = ev.place;
   document.getElementById('m-desc').textContent = ev.desc||'';
-  document.getElementById('m-cap-pill').outerHTML = capacityPillHTML(ev);
+
+  // 🟢 Ważne: NIE USUWAJ elementu #m-cap-pill (bo potem getElementById zwróci null).
+  const left = Math.max(0, ev.capacity - (ev.taken||0));
+  const pill = document.getElementById('m-cap-pill');
+  pill.textContent = `${left} wolnych`;
+  pill.classList.remove('none','low','ok');
+  pill.classList.add(left===0? 'none' : left<5? 'low' : 'ok');
+
   const banner = document.getElementById('m-banner');
-  banner.innerHTML = ev.banner? `<img src="${ev.banner}" alt="${ev.title}" style="width:100%; height:100%; object-fit:cover">` : '';
+  banner.innerHTML = ev.banner
+    ? `<img src="${ev.banner}" alt="${ev.title}" style="width:100%; height:100%; object-fit:cover">`
+    : '';
 
-  const modal = document.getElementById('event-modal');
-  modal.classList.add('open');
-  if(!map){
-    map = L.map('map');
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(map);
-  }
-  map.setView([ev.lat, ev.lng], 14);
-  if(marker){ marker.remove(); }
+  // Mapa: sprzątamy poprzednią instancję, potem tworzymy świeżą
+  if (map) { try { map.remove(); } catch(_) {} map = null; marker = null; }
+  const mapEl = document.getElementById('map');
+  mapEl.innerHTML = '';
+  map = L.map(mapEl, { attributionControl: false, zoomControl: true });
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
   marker = L.marker([ev.lat, ev.lng]).addTo(map).bindPopup(ev.title);
+  map.setView([ev.lat, ev.lng], 14);
+  setTimeout(()=> map.invalidateSize(), 150);
 
+  // A11y: fokus do zamykania + Esc + prosty focus-trap
+  const closeBtn = document.getElementById('m-close');
+  closeBtn.focus();
+  escHandler = (e)=>{
+    if(e.key === 'Escape') closeModal();
+    if(e.key === 'Tab'){
+      const focusables = modal.querySelectorAll('button, [href], input, textarea, select, [tabindex]:not([tabindex="-1"])');
+      const list = Array.from(focusables).filter(el=> !el.disabled && el.offsetParent !== null);
+      if(!list.length) return;
+      const first = list[0], last = list[list.length-1];
+      if(e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
+      else if(!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
+    }
+  };
+  document.addEventListener('keydown', escHandler);
+
+  // Formularz zapisów
   const form = document.getElementById('join-form');
   form.onsubmit = (e)=>{
     e.preventDefault();
     const { name, email } = Object.fromEntries(new FormData(form).entries());
     const events = loadEvents();
     const idx = events.findIndex(x=>x.id===id);
-    const left = events[idx].capacity - (events[idx].taken||0);
+    const leftLocal = events[idx].capacity - (events[idx].taken||0);
     const msg = document.getElementById('join-msg');
-    if(left<=0){ msg.innerHTML = '<span class="danger">Brak miejsc</span>'; return; }
+    if(leftLocal<=0){ msg.innerHTML = '<span class="danger">Brak miejsc</span>'; return; }
     events[idx].taken = (events[idx].taken||0) + 1; saveEvents(events);
     const signups = loadSignups();
     (signups[id] = signups[id] || []).push({name, email, at: new Date().toISOString()});
@@ -215,8 +249,20 @@ function openEventModal(id){
   };
 }
 
-document.getElementById('m-close').addEventListener('click', ()=> document.getElementById('event-modal').classList.remove('open'));
-document.getElementById('event-modal').addEventListener('click', (e)=>{ if(e.target.id==='event-modal') e.currentTarget.classList.remove('open'); });
+function closeModal(){
+  const modal = document.getElementById('event-modal');
+  modal.classList.remove('open');
+  modal.setAttribute('aria-hidden','true');
+
+  if (escHandler){ document.removeEventListener('keydown', escHandler); escHandler = null; }
+  if (map){ try { map.remove(); } catch(_) {} map = null; marker = null; }
+  const mapEl = document.getElementById('map'); if(mapEl) mapEl.innerHTML = '';
+
+  if (lastFocused && typeof lastFocused.focus === 'function'){ lastFocused.focus(); }
+}
+
+document.getElementById('m-close').addEventListener('click', closeModal);
+document.getElementById('event-modal').addEventListener('click', (e)=>{ if(e.target.id==='event-modal') closeModal(); });
 
 // ===== Utils =====
 function fmtDate(iso){
