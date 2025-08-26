@@ -1,6 +1,6 @@
 // ===== ROUTER (hash) =====
 import { initFirebase } from './firebase.js';
-const { storage } = initFirebase(); // na Pages może być null
+const { storage } = initFirebase() || {};
 
 const routes = {
   '/': () => renderTemplate('home-tpl'),
@@ -32,19 +32,17 @@ function route(){
   updateAuthNav();
 }
 
-// ===== PSEUDO‑AUTH (demo na localStorage) =====
+// ===== DEMO AUTH =====
 const AUTH_KEY = 'aktywni:auth:user';
 function getUser(){ try { return JSON.parse(localStorage.getItem(AUTH_KEY)); } catch { return null } }
 function setUser(u){ localStorage.setItem(AUTH_KEY, JSON.stringify(u)); updateAuthNav(); }
 function signOut(){ localStorage.removeItem(AUTH_KEY); updateAuthNav(); }
-
 function updateAuthNav(){
   const u = getUser();
   const login = document.getElementById('nav-login');
   const prof  = document.getElementById('nav-profile');
   const create= document.getElementById('nav-create');
   if(!login || !prof) return;
-
   if(u){
     login.style.display = 'none';
     prof.style.display  = '';
@@ -57,7 +55,6 @@ function updateAuthNav(){
     create.classList.add('link');
   }
 }
-
 function guardOrganizer(fn){
   const u = getUser();
   if(!u){ location.hash = '#/login'; return; }
@@ -66,82 +63,48 @@ function guardOrganizer(fn){
 
 // ===== SPORTY + POZIOMY =====
 const SPORTS = {
-  // 1
   'Siatkówka': [
     'A1 – Początkujący','A2 – Odbijający','A3 – Grający',
     'B1 – Średniozaawansowany','B2 – Zaawansowany',
     'C1 – Półzawodowy','C2 – Zawodowy – PRO'
   ],
-  // 2
   'Tenis': ['NTRP 1.0','NTRP 1.5','NTRP 2.0','NTRP 2.5','NTRP 3.0','NTRP 3.5','NTRP 4.0','NTRP 4.5','NTRP 5.0','NTRP 5.5','NTRP 6.0','NTRP 7.0'],
-  // 3
   'Padel': ['Początkujący','Rekreacyjny','Średniozaawansowany','Zaawansowany','Turniejowy/Pro'],
-  // 4
   'Squash': ['Początkujący','Klubowy','Średniozaawansowany','Zaawansowany','Turniejowy/Pro'],
-  // 5
   'Piłka Nożna': ['Rekreacyjny','Amatorski','Półprofesjonalny','Zaawansowany'],
-  // 6
   'Kolarstwo': ['Rekreacyjne','Treningowe','Amatorskie wyścigi','Zaawansowane wyścigi'],
-  // 7
   'Koszykówka 3x3': ['Rekreacyjny','Ligowy amator','Średniozaawansowany','Zaawansowany','Turniejowy/Pro'],
-  // 8
   'Koszykówka': ['Rekreacyjny','Ligowy amator','Średniozaawansowany','Zaawansowany','Turniejowy/Pro'],
-  // 9
   'Badminton': ['Początkujący','Rekreacyjny','Średniozaawansowany','Zaawansowany','Turniejowy/Pro'],
-  // 10
   'Siatkówka plażowa': [
     'A1 – Początkujący','A2 – Odbijający','A3 – Grający',
     'B1 – Średniozaawansowany','B2 – Zaawansowany',
     'C1 – Półzawodowy','C2 – Zawodowy – PRO'
   ]
 };
-
-// Kolarstwo: generatory zakresów
 const CYCLING_DISTANCES = genRangeLabels(25, 25, 300, ' km'); // 25,50,...,300
-const CYCLING_PACES = genBracketLabels(15, 5, 45, ' km/h');   // 15–20, 20–25, ... 40–45
+const CYCLING_PACES = genBracketLabels(15, 5, 45, ' km/h');   // 15–20 ... 40–45
+function genRangeLabels(start, step, end, suffix){ const a=[]; for(let v=start; v<=end; v+=step) a.push(`${v}${suffix}`); return a; }
+function genBracketLabels(start, step, end, suffix){ const a=[]; for(let v=start; v<end; v+=step) a.push(`${v}–${v+step}${suffix}`); return a; }
 
-function genRangeLabels(start, step, end, suffix){
-  const arr=[];
-  for(let v=start; v<=end; v+=step) arr.push(`${v}${suffix}`);
-  return arr;
-}
-function genBracketLabels(start, step, end, suffix){
-  const arr=[];
-  for(let v=start; v<end; v+=step) arr.push(`${v}–${v+step}${suffix}`);
-  return arr;
-}
-
-// ===== DANE DEMO (localStorage) =====
+// ===== DANE DEMO =====
 const STORE_KEY = 'aktywni:events:v1';
 const SIGN_KEY  = 'aktywni:signups:v1';
-const SKILLS_KEY= 'aktywni:user:skills'; // sport -> poziom; oraz cycling prefs
+const SKILLS_KEY= 'aktywni:user:skills';
 
-function uid(){
-  try{ if(window.crypto && window.crypto.randomUUID) return window.crypto.randomUUID(); }catch{}
-  return 'id-'+Math.random().toString(36).slice(2)+Date.now();
-}
+function uid(){ try{ if(crypto?.randomUUID) return crypto.randomUUID(); }catch{} return 'id-'+Math.random().toString(36).slice(2)+Date.now(); }
 
 const sample = [
-  { id: uid(), title: 'Bieg nad Wisłą', date: futureDate(3), time:'18:00', datetime: '', place:'Bulwary Wiślane, Warszawa', lat:52.237, lng:21.022, capacity: 20, taken: 5, banner:'https://images.unsplash.com/photo-1546483875-ad9014c88eba?q=80&w=1200&auto=format&fit=crop', desc:'Lekki bieg ~6km, tempo konwersacyjne. Każdy mile widziany.', sport:'Piłka Nożna', level:'Rekreacyjny', sex:'mix' },
-  { id: uid(), title: 'Siatkówka plażowa — sparing', date: futureDate(5), time:'17:30', datetime: '', place:'Plaża Poniatówka', lat:52.234, lng:21.040, capacity: 12, taken: 9, banner:'https://images.unsplash.com/photo-1517649763962-0c623066013b?q=80&w=1200&auto=format&fit=crop', desc:'Gramy 3×3, poziom rekreacyjny. Zabierz wodę i uśmiech :)', sport:'Siatkówka plażowa', level:'A2 – Odbijający', sex:'mix' },
-  { id: uid(), title: 'Koszykówka 3x3 — gierki', date: futureDate(2), time:'08:30', datetime: '', place:'Park Skaryszewski', lat:52.244, lng:21.056, capacity: 25, taken: 12, banner:'https://images.unsplash.com/photo-1517649763962-0c623066013b?q=80&w=1200&auto=format&fit=crop', desc:'Szybkie granie 3x3, wpadaj.', sport:'Koszykówka 3x3', level:'Ligowy amator', sex:'women' }
+  { id: uid(), title: 'Siatkówka plażowa — sparing', datetime: futureISO(5,'17:30'), place:'Plaża Poniatówka', lat:52.234, lng:21.040, capacity: 12, taken: 4, banner:'https://images.unsplash.com/photo-1517649763962-0c623066013b?q=80&w=1200&auto=format&fit=crop', desc:'Gramy 3×3, poziom rekreacyjny.', sport:'Siatkówka plażowa', level:'A2 – Odbijający', sex:'mix' },
+  { id: uid(), title: 'Koszykówka 3x3 — gierki', datetime: futureISO(2,'08:30'), place:'Park Skaryszewski', lat:52.244, lng:21.056, capacity: 25, taken: 12, banner:'https://images.unsplash.com/photo-1517649763962-0c623066013b?q=80&w=1200&auto=format&fit=crop', desc:'Szybkie granie 3x3, wpadaj.', sport:'Koszykówka 3x3', level:'Ligowy amator', sex:'women' }
 ];
-sample.forEach(e=> e.datetime = `${e.date}T${e.time}`);
-
-function futureDate(d){
-  const dt = new Date(Date.now() + d*24*3600*1000);
-  const yyyy = dt.getFullYear();
-  const mm = String(dt.getMonth()+1).padStart(2,'0');
-  const dd = String(dt.getDate()).padStart(2,'0');
-  return `${yyyy}-${mm}-${dd}`;
+function futureISO(days, time='18:00'){
+  const d=new Date(Date.now()+days*86400000);
+  const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), dd=String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${dd}T${time}`;
 }
 
-function loadEvents(){
-  const raw = localStorage.getItem(STORE_KEY);
-  if(raw){ try { return JSON.parse(raw); } catch(e){ console.warn(e); } }
-  localStorage.setItem(STORE_KEY, JSON.stringify(sample));
-  return sample;
-}
+function loadEvents(){ const raw = localStorage.getItem(STORE_KEY); if(raw){ try { return JSON.parse(raw); } catch(e){} } localStorage.setItem(STORE_KEY, JSON.stringify(sample)); return sample; }
 function saveEvents(list){ localStorage.setItem(STORE_KEY, JSON.stringify(list)); }
 function loadSignups(){ return JSON.parse(localStorage.getItem(SIGN_KEY) || '{}'); }
 function saveSignups(v){ localStorage.setItem(SIGN_KEY, JSON.stringify(v)); }
@@ -173,10 +136,7 @@ function eventCard(ev){
       ${capacityPillHTML(ev)}
       <button class="btn" aria-label="Otwórz szczegóły">Szczegóły</button>
     </div>`;
-  li.querySelector('button').addEventListener('click', (e)=> {
-    lastFocused = e.currentTarget;
-    openEventModal(ev.id);
-  });
+  li.querySelector('button').addEventListener('click', (e)=> { lastFocused = e.currentTarget; openEventModal(ev.id); });
   return li;
 }
 function capacityPillHTML(ev){
@@ -184,23 +144,13 @@ function capacityPillHTML(ev){
   const cls = left===0? 'none' : left<5? 'low' : 'ok';
   return `<span id="m-cap-pill" class="pill ${cls}">${left} wolnych</span>`;
 }
-function sexLabel(s){
-  if(s==='women') return 'Kobiety';
-  if(s==='men') return 'Mężczyźni';
-  return 'Mix';
-}
+function sexLabel(s){ if(s==='women') return 'Kobiety'; if(s==='men') return 'Mężczyźni'; return 'Mix'; }
 
-// ===== FORMULARZ „NOWE WYDARZENIE” =====
+// ===== CREATE FORM =====
 function initCreateForm(){
-  // Data + czas: tylko przyszłość, ale bez ograniczeń minut
-  const dateEl = document.getElementById('date');
-  const timeEl = document.getElementById('time');
-  const now = new Date();
-  const yyyy = now.getFullYear(), mm = String(now.getMonth()+1).padStart(2,'0'), dd = String(now.getDate()).padStart(2,'0');
-  dateEl.min = `${yyyy}-${mm}-${dd}`;
-  // time: bez step → dowolne minuty
+  // datetime-local: nic nie ograniczamy tekstem; min można ustawić jeśli chcesz: document.getElementById('dt').min = new Date().toISOString().slice(0,16);
 
-  // Sport/poziom
+  // Sporty/poziomy
   const sportSel = document.getElementById('sport-select');
   const levelSel = document.getElementById('level-select');
   sportSel.innerHTML = Object.keys(SPORTS).map(s=>`<option value="${s}">${s}</option>`).join('');
@@ -212,13 +162,11 @@ function initCreateForm(){
   sportSel.addEventListener('change', setLevels);
   setLevels();
 
-  // Kolarstwo: wypełnij słowniki
-  const cycDist = document.getElementById('cycling-distance');
-  const cycPace = document.getElementById('cycling-pace');
-  cycDist.innerHTML = CYCLING_DISTANCES.map(v=>`<option value="${v}">${v}</option>`).join('');
-  cycPace.innerHTML = CYCLING_PACES.map(v=>`<option value="${v}">${v}</option>`).join('');
+  // Kolarstwo: słowniki
+  document.getElementById('cycling-distance').innerHTML = CYCLING_DISTANCES.map(v=>`<option value="${v}">${v}</option>`).join('');
+  document.getElementById('cycling-pace').innerHTML = CYCLING_PACES.map(v=>`<option value="${v}">${v}</option>`).join('');
 
-  // Mapa + geokoder (Photon) + reverse geocode
+  // Mapa + geocoder (Photon) + reverse geocode
   const mapEl = document.getElementById('create-map');
   const placeInput = document.getElementById('place');
   const latEl = document.getElementById('lat');
@@ -281,20 +229,17 @@ function initCreateForm(){
   form.addEventListener('submit', async (e)=>{
     e.preventDefault();
 
-    // zbuduj datetime
-    const date = document.getElementById('date').value; // YYYY-MM-DD
-    const time = document.getElementById('time').value; // HH:mm
-    const dtISO = `${date}T${time}`;
+    const dt = document.getElementById('dt').value; // YYYY-MM-DDTHH:mm
+    if(!dt){ alert('Ustaw datę i godzinę.'); return; }
 
     const fd = new FormData(form);
     const ev = Object.fromEntries(fd.entries());
     ev.id = uid();
     ev.capacity = Number(ev.capacity)||1; ev.taken = 0;
     ev.lat = parseFloat(ev.lat); ev.lng = parseFloat(ev.lng);
-    ev.datetime = dtISO;
-    ev.date = date; ev.time = time;
+    ev.datetime = dt; // prosto z datetime-local
 
-    // upload banera (jeśli storage istnieje), inaczej użyj URL
+    // Upload banera jeśli storage istnieje, inaczej użyj URL
     const file = document.getElementById('bannerFile').files[0];
     if (file && storage) {
       try {
@@ -310,7 +255,6 @@ function initCreateForm(){
       ev.banner = document.getElementById('bannerUrl').value || '';
     }
 
-    // Kolarstwo — przenieś pola tylko jeśli wybrano ten sport
     if (ev.sport !== 'Kolarstwo') {
       delete ev.cyclingDistance;
       delete ev.cyclingPace;
@@ -348,8 +292,6 @@ function renderProfileView(){
 
     const form = document.getElementById('skills-form');
     const skills = loadSkills();
-
-    // rysuj selektory poziomów
     form.innerHTML = Object.keys(SPORTS).map(s=>{
       const options = SPORTS[s].map(l=>`<option ${skills[s]===l?'selected':''}>${l}</option>`).join('');
       return `
@@ -359,7 +301,6 @@ function renderProfileView(){
         </div>`;
     }).join('');
 
-    // prefs kolarstwa
     const cycBox = document.getElementById('skills-cycling');
     const cycDist = document.getElementById('skill-cyc-dist');
     const cycPace = document.getElementById('skill-cyc-pace');
@@ -467,11 +408,9 @@ function closeModal(){
   const modal = document.getElementById('event-modal');
   modal.classList.remove('open');
   modal.setAttribute('aria-hidden','true');
-
   if (escHandler){ document.removeEventListener('keydown', escHandler); escHandler = null; }
   if (map){ try { map.remove(); } catch(_) {} map = null; marker = null; }
   const mapEl = document.getElementById('map'); if(mapEl) mapEl.innerHTML = '';
-
   if (lastFocused && typeof lastFocused.focus === 'function'){ lastFocused.focus(); }
 }
 

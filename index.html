@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Aktywni — wydarzenia sportowe</title>
-  <meta name="description" content="Strona dla aktywnych sportowo: odkrywaj i twórz wydarzenia, zapisuj się, sprawdzaj lokalizacje na mini-mapie." />
+  <meta name="description" content="Strona dla aktywnych sportowo: odkrywaj i twórz wydarzenia, zapisuj się, sprawdzaj lokalizacje na mini‑mapie." />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
@@ -13,33 +13,11 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
-  <!-- Leaflet Geocoder (Photon/Komoot – większa baza) -->
+  <!-- Geocoder (Photon) -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
   <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
 
   <link rel="stylesheet" href="/src/styles.css" />
-
-  <!-- UX/A11y -->
-  <style>
-    :focus-visible{ outline:3px solid #66e1c6; outline-offset:3px; border-radius:6px; }
-    .skip-link{ position:absolute; left:-9999px; top:auto; width:1px; height:1px; overflow:hidden; }
-    .skip-link:focus{ position:fixed; left:16px; top:16px; width:auto; height:auto; z-index:9999; background:#0b1020; color:#fff; padding:10px 14px; border-radius:8px; box-shadow:0 6px 18px rgba(0,0,0,.4); }
-    header .btn:focus-visible, header .btn:hover{ box-shadow:0 0 0 3px rgba(102,225,198,.35) inset; }
-
-    /* Ciemny motyw dla inputu geokodera */
-    .leaflet-control-geocoder,
-    .leaflet-control-geocoder-expanded { background:#0f172a !important; border:1px solid #223 !important; }
-    .leaflet-control-geocoder-form input {
-      color:#e5e7eb !important; background:#0b1020 !important; border:1px solid #334155 !important;
-      padding:.45rem .6rem !important; border-radius:.6rem !important;
-    }
-    .leaflet-control-geocoder-alternatives { background:#0f172a !important; color:#e5e7eb !important; }
-    .leaflet-control-geocoder-alternatives a { color:#e5e7eb !important; }
-    .leaflet-control-geocoder-icon { filter: invert(1) opacity(.9); }
-    @media (prefers-reduced-motion: reduce){
-      *{ animation-duration:0.001ms !important; animation-iteration-count:1 !important; transition-duration:0.001ms !important; scroll-behavior:auto !important; }
-    }
-  </style>
 </head>
 <body>
   <a class="skip-link" href="#app">Pomiń nawigację, przejdź do treści</a>
@@ -64,8 +42,7 @@
       <div class="hero-grid">
         <div class="glass" style="padding:22px">
           <h1>Twoje sportowe centrum wydarzeń</h1>
-          <p>Odkrywaj lokalne aktywności, zapisuj się na wydarzenia i twórz własne — od biegania po siatkówkę.
-             Mini‑mapa pomoże Ci szybko sprawdzić lokalizację.</p>
+          <p>Odkrywaj lokalne aktywności, zapisuj się na wydarzenia i twórz własne — od biegania po siatkówkę. Mini‑mapa pomoże Ci szybko sprawdzić lokalizację.</p>
           <div class="hero-cta">
             <a class="btn primary" href="#/wydarzenia">Przeglądaj wydarzenia</a>
             <a class="btn link" href="#/nowe" style="color:var(--brand-2)">Stwórz wydarzenie</a>
@@ -74,15 +51,6 @@
         <div class="art glass">
           <span class="badge">Aktywni razem ✦</span>
         </div>
-      </div>
-    </section>
-
-    <section class="section container">
-      <h2 style="margin:0 0 12px">Jak to działa?</h2>
-      <div class="cards">
-        <div class="card"><strong>Krok 1</strong><p class="meta">Wybierz wydarzenie z listy i otwórz szczegóły.</p></div>
-        <div class="card"><strong>Krok 2</strong><p class="meta">Sprawdź datę, miejsce i podgląd na mini‑mapie.</p></div>
-        <div class="card"><strong>Krok 3</strong><p class="meta">Zapisz się. Liczba miejsc aktualizuje się automatycznie*</p><p class="meta">*W demo zapisy są lokalne.</p></div>
       </div>
     </section>
   </template>
@@ -111,7 +79,7 @@
     </section>
   </template>
 
-  <!-- Profil + poziomy sportów -->
+  <!-- Profil (z poziomami) -->
   <template id="profile-tpl">
     <section class="section container">
       <h2 style="margin:0 0 10px">Twój profil</h2>
@@ -121,7 +89,6 @@
         <h3 style="margin:0 0 8px; font-size:18px">Poziomy w sportach</h3>
         <form id="skills-form" class="stack" style="display:grid; gap:10px"></form>
 
-        <!-- Preferencje kolarstwa w profilu -->
         <div id="skills-cycling" class="stack" style="display:none; gap:10px; margin-top:8px">
           <h4 style="margin:8px 0 0; font-size:16px">Kolarstwo — preferencje</h4>
           <div class="field" style="display:grid; grid-template-columns:200px 1fr; gap:12px; align-items:center">
@@ -145,83 +112,80 @@
 
   <!-- Nowe wydarzenie -->
   <template id="create-tpl">
-  <section class="section container">
-    <h2 style="margin:0 0 10px">Dodaj nowe wydarzenie</h2>
+    <section class="section container">
+      <h2 style="margin:0 0 10px">Dodaj nowe wydarzenie</h2>
 
-    <form id="create-form" class="glass" style="padding:16px">
-      <div class="field">
-        <label>Nazwa wydarzenia</label>
-        <input name="title" required placeholder="Bieg nad Wisłą" />
-      </div>
+      <form id="create-form" class="glass" style="padding:16px">
+        <div class="field">
+          <label>Nazwa wydarzenia</label>
+          <input name="title" required placeholder="Bieg nad Wisłą" />
+        </div>
 
-      <!-- Data i godzina -->
-      <div class="field">
-        <label>Data i godzina</label>
-        <div style="display:flex; gap:8px; align-items:center">
+        <div class="field">
+          <label>Data i godzina</label>
           <input id="dt" type="datetime-local" name="datetime" required />
         </div>
-      </div>
 
-      <!-- Miejsce -->
-      <div class="field">
-        <label>Miejsce (wyszukaj na mapie lub skorzystaj z wyszukiwarki na mapie)</label>
-        <input id="place" name="place" required placeholder="np. Bulwary Wiślane, Warszawa" />
-      </div>
+        <div class="field">
+          <label>Miejsce (wyszukaj na mapie lub skorzystaj z wyszukiwarki na mapie)</label>
+          <input id="place" name="place" required placeholder="np. Bulwary Wiślane, Warszawa" />
+        </div>
 
-      <!-- Lokalizacja na mapie -->
-      <div class="field">
-        <label>Lokalizacja na mapie</label>
-        <div id="create-map" style="height:280px; border-radius:14px; overflow:hidden; background:#223"></div>
-        <input type="hidden" name="lat" id="lat" required />
-        <input type="hidden" name="lng" id="lng" required />
-      </div>
+        <div class="field">
+          <label>Lokalizacja na mapie</label>
+          <div id="create-map" style="height:280px; border-radius:14px; overflow:hidden; background:#223"></div>
+          <input type="hidden" name="lat" id="lat" required />
+          <input type="hidden" name="lng" id="lng" required />
+        </div>
 
-      <!-- Sport -->
-      <div class="field">
-        <label>Sport</label>
-        <select id="sport" name="sport" required>
-          <option value="">-- wybierz sport --</option>
-          <option value="siatkowka">Siatkówka</option>
-          <option value="tenis">Tenis</option>
-          <option value="padel">Padel</option>
-          <option value="squash">Squash</option>
-          <option value="pilka-nozna">Piłka Nożna</option>
-          <option value="kolarstwo">Kolarstwo</option>
-          <option value="koszykowka3x3">Koszykówka 3x3</option>
-          <option value="koszykowka">Koszykówka</option>
-          <option value="badminton">Badminton</option>
-          <option value="siatkowka-plazowa">Siatkówka plażowa</option>
-        </select>
-      </div>
+        <div class="field">
+          <label>Baner wydarzenia</label>
+          <input id="bannerFile" type="file" accept="image/*" />
+          <input id="bannerUrl" name="banner" type="url" placeholder="lub wklej URL (opcjonalnie)" />
+        </div>
 
-      <!-- Limit miejsc -->
-      <div class="field">
-        <label>Limit miejsc</label>
-        <input name="capacity" type="number" min="1" value="20" required />
-      </div>
+        <div class="field" style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px">
+          <div>
+            <label>Sport</label>
+            <select name="sport" id="sport-select" required></select>
+          </div>
+          <div>
+            <label>Poziom</label>
+            <select name="level" id="level-select" required></select>
+          </div>
+          <div>
+            <label>Płeć</label>
+            <select name="sex" id="sex-select" required>
+              <option value="mix">Mix</option>
+              <option value="women">Kobiety</option>
+              <option value="men">Mężczyźni</option>
+            </select>
+          </div>
+        </div>
 
-      <!-- Baner -->
-      <div class="field">
-        <label>Baner (URL obrazka — opcjonalnie)</label>
-        <input name="banner" type="url" placeholder="https://...jpg" />
-      </div>
+        <div id="cycling-extra" class="field" style="display:none; grid-template-columns:repeat(2,1fr); gap:12px">
+          <div>
+            <label>Dystans</label>
+            <select name="cyclingDistance" id="cycling-distance"></select>
+          </div>
+          <div>
+            <label>Tempo (km/h)</label>
+            <select name="cyclingPace" id="cycling-pace"></select>
+          </div>
+        </div>
 
-      <!-- Opis -->
-      <div class="field">
-        <label>Opis</label>
-        <textarea name="desc" rows="3" placeholder="Przyjemne tempo, każdy mile widziany."></textarea>
-      </div>
+        <div class="field"><label>Limit miejsc</label><input name="capacity" type="number" min="1" value="20" required /></div>
+        <div class="field"><label>Opis</label><textarea name="desc" rows="3" placeholder="Przyjemne tempo, każdy mile widziany."></textarea></div>
 
-      <div style="display:flex; gap:8px; align-items:center; justify-content:space-between">
-        <button class="btn primary" type="submit">Zapisz wydarzenie</button>
-        <a class="btn" href="#/wydarzenia">Anuluj</a>
-      </div>
-    </form>
-  </section>
-</template>
+        <div style="display:flex; gap:8px; align-items:center; justify-content:space-between">
+          <button class="btn primary" type="submit">Zapisz wydarzenie</button>
+          <a class="btn" href="#/wydarzenia">Anuluj</a>
+        </div>
+      </form>
+    </section>
+  </template>
 
-
-  <!-- Modal szczegółów wydarzenia -->
+  <!-- Modal szczegółów -->
   <div class="modal" id="event-modal" aria-hidden="true" role="dialog" aria-label="Szczegóły wydarzenia">
     <div class="modal-card">
       <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:8px">
